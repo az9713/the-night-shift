@@ -1,0 +1,414 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SANDLINE — browser tactical FPS</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%23b98d4f'/%3E%3Ccircle cx='32' cy='32' r='14' fill='none' stroke='%231c1c1c' stroke-width='4'/%3E%3Cpath d='M32 10v12M32 42v12M10 32h12M42 32h12' stroke='%231c1c1c' stroke-width='4'/%3E%3C/svg%3E">
+<style>
+  * { box-sizing: border-box; margin: 0; }
+  body { background: #0e0c09; color: #efe9dd; font: 14px/1.4 "Segoe UI", system-ui, sans-serif;
+         overflow: hidden; height: 100vh; }
+  #app { position: relative; width: 100vw; height: 100vh; }
+  canvas.webgl { display: block; }
+  .hud { position: absolute; pointer-events: none; }
+  #crosshair { left: 50%; top: 50%; transform: translate(-50%,-50%); width: 22px; height: 22px; }
+  #crosshair::before, #crosshair::after { content: ''; position: absolute; background: #d8f3c0; }
+  #crosshair::before { left: 50%; top: 0; width: 2px; height: 100%; transform: translateX(-50%); }
+  #crosshair::after { top: 50%; left: 0; height: 2px; width: 100%; transform: translateY(-50%); }
+  #topbar { top: 14px; left: 50%; transform: translateX(-50%); display: flex; gap: 18px;
+    background: rgba(10,10,8,.72); padding: 8px 22px; border: 1px solid #3a352b; font-weight: 600; }
+  #topbar .t { color: #e8c168; min-width: 52px; text-align: center; font-variant-numeric: tabular-nums; }
+  #vitals { left: 22px; bottom: 18px; display: flex; gap: 22px; font: 700 26px "Segoe UI";
+    background: rgba(10,10,8,.6); padding: 10px 18px; border: 1px solid #3a352b; }
+  #vitals .hp { color: #7fd97a; } #vitals .ap { color: #7ab8d9; }
+  #ammo { right: 22px; bottom: 18px; font: 700 26px "Segoe UI"; text-align: right;
+    background: rgba(10,10,8,.6); padding: 10px 18px; border: 1px solid #3a352b; }
+  #ammo small { display: block; font: 600 13px "Segoe UI"; color: #b8ac93; }
+  #money { right: 22px; top: 14px; color: #a9d98a; font: 700 20px "Segoe UI";
+    background: rgba(10,10,8,.6); padding: 8px 14px; border: 1px solid #3a352b; }
+  #minimap { left: 22px; top: 14px; border: 1px solid #3a352b; background: rgba(10,10,8,.72); }
+  #feed { right: 22px; top: 64px; display: flex; flex-direction: column; gap: 4px; align-items: flex-end;
+    font-size: 13px; }
+  #feed div { background: rgba(10,10,8,.65); padding: 4px 10px; border-left: 3px solid #e8c168; }
+  #banner { left: 50%; top: 34%; transform: translateX(-50%); font: 800 34px "Segoe UI";
+    color: #e8c168; text-shadow: 0 2px 8px #000; text-align: center; }
+  #subbanner { left: 50%; top: 44%; transform: translateX(-50%); font: 600 16px "Segoe UI"; color: #d5cbb4; }
+  #plantbar { left: 50%; bottom: 26%; transform: translateX(-50%); width: 280px; height: 14px;
+    border: 1px solid #e8c168; display: none; }
+  #plantbar i { display: block; height: 100%; width: 0; background: #e8c168; }
+  #damage { inset: 0; background: radial-gradient(ellipse at center, transparent 55%, rgba(210,30,30,.55));
+    opacity: 0; transition: opacity .12s; }
+  #start { position: absolute; inset: 0; display: grid; place-items: center; text-align: center;
+    background: rgba(8,7,5,.86); z-index: 20; cursor: pointer; }
+  #start h1 { font: 800 54px "Segoe UI"; letter-spacing: .2em; color: #e8c168; }
+  #start p { margin-top: 14px; color: #cfc4aa; max-width: 560px; line-height: 1.7; }
+  #start kbd { background: #2c2921; border: 1px solid #56503f; padding: 1px 7px; border-radius: 3px; }
+  #bombicon { left: 50%; top: 60px; transform: translateX(-50%); color: #ff5e4a; font: 800 18px "Segoe UI";
+    display: none; letter-spacing: .2em; }
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="start">
+    <div>
+      <h1>SANDLINE</h1>
+      <p>A two-site tactical round: you're the attacker. Plant the charge at <b>A</b> or <b>B</b>, or eliminate all five defenders.
+      <br><br><kbd>W A S D</kbd> move · <kbd>mouse</kbd> look · <kbd>click</kbd> fire · <kbd>R</kbd> reload · <kbd>E</kbd> hold to plant · <kbd>B</kbd> buy rifle ($2700, buy phase) · <kbd>Shift</kbd> walk · <kbd>Space</kbd> jump
+      <br><br>Click anywhere to lock the mouse and begin.</p>
+    </div>
+  </div>
+  <div class="hud" id="crosshair"></div>
+  <div class="hud" id="topbar"><span id="score-p">0</span><span class="t" id="timer">--</span><span id="score-b">0</span></div>
+  <div class="hud" id="bombicon">⏱ BOMB PLANTED</div>
+  <div class="hud" id="money">$800</div>
+  <canvas class="hud" id="minimap" width="180" height="140"></canvas>
+  <div class="hud" id="vitals"><span class="hp" id="hp">100</span><span class="ap" id="ap">0</span></div>
+  <div class="hud" id="ammo"><span id="mag">12</span> / <span id="res">36</span><small id="wname">PISTOL</small></div>
+  <div class="hud" id="feed"></div>
+  <div class="hud" id="banner"></div>
+  <div class="hud" id="subbanner"></div>
+  <div class="hud" id="plantbar"><i></i></div>
+  <div class="hud" id="damage"></div>
+</div>
+
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.185.1/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.185.1/examples/jsm/"
+} }
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { WALLS, CRATES, SITE_A, SITE_B, PLAYER_SPAWN } from './src/level.js';
+import { newGame, step, emptyInput, TICK, EYE, WEAPONS, mulberry32 } from './src/sim.js';
+
+const qa = new URLSearchParams(location.search).has('qa');
+const qaState = { errors: [] };
+const publish = () => {
+  if (!qa) return;
+  window.__P6_QA__ = qaState;
+  document.documentElement.dataset.p6Qa = JSON.stringify({ ...qaState, bots: qaState.bots?.slice(0, 5) });
+};
+window.addEventListener('error', (e) => { qaState.errors.push(String(e.message)); publish(); });
+window.addEventListener('unhandledrejection', (e) => { qaState.errors.push(String(e.reason)); publish(); });
+
+// ---------- audio bleeps ----------
+let actx = null;
+function sfx(freq, dur, type = 'square', gain = 0.15) {
+  try {
+    actx ??= new AudioContext();
+    const o = actx.createOscillator(), g = actx.createGain(), now = actx.currentTime;
+    o.type = type; o.frequency.setValueAtTime(freq, now);
+    o.frequency.exponentialRampToValueAtTime(Math.max(40, freq / 2.5), now + dur);
+    g.gain.setValueAtTime(gain, now);
+    g.gain.exponentialRampToValueAtTime(0.001, now + dur);
+    o.connect(g).connect(actx.destination); o.start(now); o.stop(now + dur + 0.02);
+  } catch {}
+}
+
+// ---------- renderer/scene ----------
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 1.75));
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.05;
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFShadowMap;
+renderer.domElement.className = 'webgl';
+document.getElementById('app').prepend(renderer.domElement);
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0xbfd7e8);
+scene.fog = new THREE.Fog(0xcfd9c9, 60, 160);
+
+const camera = new THREE.PerspectiveCamera(75, 1, 0.1, 300);
+let yaw = 0, pitch = 0;
+
+const sun = new THREE.DirectionalLight(0xfff2d8, 3.2);
+sun.position.set(35, 60, 20);
+sun.castShadow = true;
+sun.shadow.mapSize.set(2048, 2048);
+sun.shadow.camera.left = -60; sun.shadow.camera.right = 60;
+sun.shadow.camera.top = 60; sun.shadow.camera.bottom = -60;
+sun.shadow.bias = -0.0006;
+scene.add(sun);
+scene.add(new THREE.HemisphereLight(0xd8e6f0, 0x8a7a58, 0.85));
+
+const loader = new THREE.TextureLoader();
+const tex = (url, rx, ry) => {
+  const t = loader.load(url);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  t.repeat.set(rx, ry);
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.anisotropy = 4;
+  return t;
+};
+const groundMat = new THREE.MeshStandardMaterial({ map: tex('./assets/ground.png', 30, 24), roughness: 0.95 });
+const wallMatOf = (sx) => new THREE.MeshStandardMaterial({ map: tex('./assets/wall.png', Math.max(1, sx / 6), 1.2), roughness: 0.9, color: 0xd8c9a8 });
+const crateMat = new THREE.MeshStandardMaterial({ map: tex('./assets/crate.png', 1, 1), roughness: 0.85 });
+
+const ground = new THREE.Mesh(new THREE.PlaneGeometry(180, 140), groundMat);
+ground.rotation.x = -Math.PI / 2;
+ground.receiveShadow = true;
+scene.add(ground);
+
+for (const [cx, cy, cz, sx, sy, sz] of WALLS) {
+  const m = new THREE.Mesh(new THREE.BoxGeometry(sx, sy, sz), wallMatOf(Math.max(sx, sz)));
+  m.position.set(cx, cy, cz);
+  m.castShadow = m.receiveShadow = true;
+  scene.add(m);
+}
+for (const [cx, cy, cz, sx, sy, sz] of CRATES) {
+  const m = new THREE.Mesh(new THREE.BoxGeometry(sx, sy, sz), crateMat);
+  m.position.set(cx, cy, cz);
+  m.castShadow = m.receiveShadow = true;
+  scene.add(m);
+}
+// site decals
+for (const [site, label, color] of [[SITE_A, 'A', 0xe8c168], [SITE_B, 'B', 0x7ab8d9]]) {
+  const ring = new THREE.Mesh(new THREE.RingGeometry(site[2] - 0.4, site[2], 48),
+    new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.55, side: THREE.DoubleSide }));
+  ring.rotation.x = -Math.PI / 2;
+  ring.position.set(site[0], 0.02, site[1]);
+  scene.add(ring);
+  const c = document.createElement('canvas'); c.width = c.height = 128;
+  const g2 = c.getContext('2d');
+  g2.fillStyle = '#' + color.toString(16).padStart(6, '0');
+  g2.font = '800 96px Segoe UI'; g2.textAlign = 'center'; g2.textBaseline = 'middle';
+  g2.fillText(label, 64, 70);
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(c), transparent: true, opacity: 0.9 }));
+  sp.scale.set(3, 3, 1);
+  sp.position.set(site[0], 4.4, site[1]);
+  scene.add(sp);
+}
+// distant silhouette + viewmodel gun
+const minaret = new THREE.Mesh(new THREE.CylinderGeometry(1.2, 1.6, 22, 10),
+  new THREE.MeshStandardMaterial({ color: 0xb9a888, roughness: 1 }));
+minaret.position.set(-60, 11, -70);
+scene.add(minaret);
+const gun = new THREE.Group();
+const barrel = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.06, 0.5), new THREE.MeshStandardMaterial({ color: 0x22221e, roughness: 0.45, metalness: 0.7 }));
+barrel.position.set(0.16, -0.14, -0.35);
+const body = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.12, 0.24), new THREE.MeshStandardMaterial({ color: 0x35322a, roughness: 0.6 }));
+body.position.set(0.16, -0.18, -0.16);
+gun.add(barrel, body);
+camera.add(gun);
+scene.add(camera);
+const flash = new THREE.PointLight(0xffc873, 0, 8, 2);
+flash.position.set(0.16, -0.12, -0.6);
+camera.add(flash);
+
+// bots — capsule bodies with team color
+const botMeshes = [];
+const botMat = new THREE.MeshStandardMaterial({ color: 0x39506b, roughness: 0.8 });
+const botDead = new THREE.MeshStandardMaterial({ color: 0x3a3a3a, roughness: 1 });
+for (let i = 0; i < 5; i++) {
+  const g3 = new THREE.Group();
+  const torso = new THREE.Mesh(new THREE.CapsuleGeometry(0.34, 0.9, 4, 12), botMat.clone());
+  torso.position.y = 1.0;
+  torso.castShadow = true;
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.2, 16, 12),
+    new THREE.MeshStandardMaterial({ color: 0xc9a684, roughness: 0.8 }));
+  head.position.y = 1.85;
+  head.castShadow = true;
+  const visor = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.08, 0.1),
+    new THREE.MeshStandardMaterial({ color: 0x1c2b3a, roughness: 0.3 }));
+  visor.position.set(0, 1.86, -0.16);
+  g3.add(torso, head, visor);
+  scene.add(g3);
+  botMeshes.push(g3);
+}
+// tracers
+const tracerMat = new THREE.LineBasicMaterial({ color: 0xffe6a0, transparent: true, opacity: 0.9 });
+const tracers = [];
+function tracer(from, to) {
+  const geo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(...from), new THREE.Vector3(...to)]);
+  const line = new THREE.Line(geo, tracerMat.clone());
+  line.userData.ttl = 0.08;
+  scene.add(line);
+  tracers.push(line);
+}
+
+// ---------- game state + input ----------
+let game = newGame();
+const rand = mulberry32(20260719);
+const held = { forward: false, back: false, left: false, right: false, jump: false, walk: false,
+  fire: false, reload: false, plant: false, buyRifle: false };
+const driveOverride = {};    // QA injection
+let locked = false;
+
+const K = { w: 'forward', s: 'back', a: 'left', d: 'right', ' ': 'jump', shift: 'walk',
+  r: 'reload', e: 'plant', b: 'buyRifle' };
+addEventListener('keydown', (e) => { const k = K[e.key.toLowerCase()]; if (k) { held[k] = true; e.preventDefault(); } });
+addEventListener('keyup', (e) => { const k = K[e.key.toLowerCase()]; if (k) held[k] = false; });
+addEventListener('mousedown', () => { if (locked) held.fire = true; });
+addEventListener('mouseup', () => { held.fire = false; });
+addEventListener('mousemove', (e) => {
+  if (!locked) return;
+  yaw -= e.movementX * 0.0023;
+  pitch = Math.max(-1.45, Math.min(1.45, pitch - e.movementY * 0.0023));
+});
+const startEl = document.getElementById('start');
+startEl.addEventListener('click', () => { renderer.domElement.requestPointerLock(); actx ??= new AudioContext(); });
+if (qa) startEl.style.display = 'none';   // automation drives via __P6_DRIVE__, no lock available
+document.addEventListener('pointerlockchange', () => {
+  locked = document.pointerLockElement === renderer.domElement;
+  startEl.style.display = locked ? 'none' : 'grid';
+});
+
+// ---------- HUD ----------
+const $ = (id) => document.getElementById(id);
+const feed = [];
+function pushFeed(text) {
+  feed.push(text);
+  if (feed.length > 5) feed.shift();
+  $('feed').innerHTML = feed.map((f) => `<div>${f}</div>`).join('');
+}
+const mm = $('minimap').getContext('2d');
+function drawMinimap() {
+  mm.fillStyle = 'rgba(12,11,8,.9)'; mm.fillRect(0, 0, 180, 140);
+  const X = (x) => 90 + x * 2, Z = (z) => 70 + z * 2;
+  mm.fillStyle = '#5a523d';
+  for (const [cx, , cz, sx, , sz] of WALLS) mm.fillRect(X(cx) - sx, Z(cz) - sz, sx * 2, sz * 2);
+  mm.fillStyle = '#e8c168'; mm.beginPath(); mm.arc(X(SITE_A[0]), Z(SITE_A[1]), 4, 0, 7); mm.fill();
+  mm.fillStyle = '#7ab8d9'; mm.beginPath(); mm.arc(X(SITE_B[0]), Z(SITE_B[1]), 4, 0, 7); mm.fill();
+  for (const b of game.bots) {
+    if (b.state === 'dead') continue;
+    mm.fillStyle = '#c05a5a'; mm.beginPath(); mm.arc(X(b.pos[0]), Z(b.pos[2]), 2.5, 0, 7); mm.fill();
+  }
+  const p = game.player.pos;
+  mm.save();
+  mm.translate(X(p[0]), Z(p[2]));
+  mm.rotate(-yaw);
+  mm.fillStyle = '#8fe07a';
+  mm.beginPath(); mm.moveTo(0, -5); mm.lineTo(3.4, 4); mm.lineTo(-3.4, 4); mm.closePath(); mm.fill();
+  mm.restore();
+}
+
+let lastEventCount = 0;
+function consumeEvents() {
+  const evs = game.events;
+  if (lastEventCount > evs.length) lastEventCount = 0;
+  while (lastEventCount < evs.length) {
+    const e = evs[lastEventCount++];
+    if (e.type === 'shot') { flash.intensity = 6; sfx(game.player.weapon === 'rifle' ? 150 : 190, 0.07, 'square', 0.12);
+      if (e.hit !== null) sfx(720, 0.05, 'sine', 0.1); }
+    if (e.type === 'kill') { pushFeed(`YOU ⟶ defender ${e.bot + 1} (${e.weapon})`); sfx(500, 0.15, 'triangle', 0.16); }
+    if (e.type === 'botShot') sfx(120, 0.06, 'sawtooth', 0.05);
+    if (e.type === 'playerHit') { $('damage').style.opacity = 0.85; setTimeout(() => $('damage').style.opacity = 0, 130); sfx(90, 0.12, 'sawtooth', 0.14); }
+    if (e.type === 'planted') { pushFeed(`Bomb planted at ${e.site}`); sfx(880, 0.3, 'sine', 0.2); }
+    if (e.type === 'reload') sfx(320, 0.1, 'triangle', 0.08);
+    if (e.type === 'roundEnd') sfx(e.playerWon ? 660 : 110, 0.5, e.playerWon ? 'triangle' : 'sawtooth', 0.2);
+  }
+}
+
+function hud() {
+  const p = game.player;
+  $('hp').textContent = Math.max(0, p.health);
+  $('ap').textContent = p.armor;
+  $('mag').textContent = p.ammo;
+  $('res').textContent = p.reserve;
+  $('wname').textContent = p.weapon.toUpperCase() + (p.reloadT > 0 ? ' · RELOADING' : '');
+  $('money').textContent = '$' + game.money;
+  $('score-p').textContent = game.score.player;
+  $('score-b').textContent = game.score.bots;
+  const t = game.bomb.planted ? game.bomb.timer : game.phaseT;
+  $('timer').textContent = game.mode === 'roundEnd' ? '—' :
+    `${Math.max(0, Math.floor(t / 60))}:${String(Math.max(0, Math.ceil(t % 60))).padStart(2, '0')}`;
+  $('bombicon').style.display = game.bomb.planted && game.mode !== 'roundEnd' ? 'block' : 'none';
+  const banner = $('banner'), sub = $('subbanner');
+  if (game.mode === 'buy') { banner.textContent = `ROUND ${game.round} — BUY PHASE`; sub.textContent = 'Press B to buy the rifle ($2700)'; }
+  else if (game.mode === 'roundEnd') {
+    const last = [...game.events].reverse().find((e) => e.type === 'roundEnd');
+    banner.textContent = last?.playerWon ? 'ROUND WON' : 'ROUND LOST';
+    sub.textContent = { boom: 'The charge detonated.', elimination: 'All defenders eliminated.', died: 'You were taken down.', time: 'Time expired.' }[last?.why] ?? '';
+  } else { banner.textContent = ''; sub.textContent = ''; }
+  const pb = $('plantbar');
+  if (p.plantT > 0) { pb.style.display = 'block'; pb.firstElementChild.style.width = `${p.plantT / 3 * 100}%`; }
+  else pb.style.display = 'none';
+  drawMinimap();
+}
+
+// ---------- fixed-tick loop ----------
+const frameTimes = [];
+let last = performance.now(), acc = 0, frame = 0;
+function resize() {
+  renderer.setSize(innerWidth, innerHeight, false);
+  camera.aspect = innerWidth / innerHeight;
+  camera.updateProjectionMatrix();
+}
+addEventListener('resize', resize);
+resize();
+
+function loop(now) {
+  const dt = Math.min(100, now - last); last = now;
+  if (dt > 0) { frameTimes.push(dt); if (frameTimes.length > 3600) frameTimes.shift(); }
+  acc += dt;
+  while (acc >= 1000 * TICK) {
+    acc -= 1000 * TICK;
+    const input = { ...emptyInput(), ...held, ...driveOverride, yaw, pitch };
+    if (driveOverride.yaw !== undefined) { yaw = driveOverride.yaw; input.yaw = yaw; }
+    if (driveOverride.pitch !== undefined) { pitch = driveOverride.pitch; input.pitch = pitch; }
+    game = step(game, input, rand);
+    consumeEvents();
+  }
+  flash.intensity = Math.max(0, flash.intensity - dt * 0.04);
+  for (let i = tracers.length - 1; i >= 0; i--) {
+    tracers[i].userData.ttl -= dt / 1000;
+    if (tracers[i].userData.ttl <= 0) { scene.remove(tracers[i]); tracers.splice(i, 1); }
+  }
+  const p = game.player;
+  camera.position.set(p.pos[0], p.pos[1] + EYE, p.pos[2]);
+  camera.rotation.set(0, 0, 0);
+  camera.rotateY(yaw);
+  camera.rotateX(pitch);
+  gun.position.y = Math.sin(now * 0.006) * 0.004 - (held.forward || held.back ? Math.abs(Math.sin(now * 0.012)) * 0.01 : 0);
+  game.bots.forEach((b, i) => {
+    const mBot = botMeshes[i];
+    mBot.position.set(b.pos[0], 0, b.pos[2]);
+    mBot.rotation.y = b.yaw;
+    const torso = mBot.children[0];
+    if (b.state === 'dead' && torso.material !== botDead) {
+      torso.material = botDead;
+      mBot.rotation.x = -Math.PI / 2;
+      mBot.position.y = 0.3;
+    } else if (b.state !== 'dead' && torso.material === botDead) {
+      torso.material = botMat.clone();
+      mBot.rotation.x = 0;
+    }
+  });
+  hud();
+  renderer.render(scene, camera);
+  if (qa && ++frame % 20 === 0) {
+    const sorted = [...frameTimes].sort((a, b2) => a - b2);
+    Object.assign(qaState, {
+      mode: game.mode, round: game.round, phaseT: +game.phaseT.toFixed(2),
+      score: game.score, money: game.money,
+      player: { pos: p.pos.map((v) => +v.toFixed(2)), health: p.health, ammo: p.ammo,
+        weapon: p.weapon, alive: p.alive, plantT: +p.plantT.toFixed(2) },
+      bots: game.bots.map((b) => ({ id: b.id, state: b.state, health: b.health, pos: b.pos.map((v) => +v.toFixed(1)) })),
+      bomb: game.bomb, yaw: +yaw.toFixed(3), pitch: +pitch.toFixed(3),
+      medianFps: sorted.length ? +(1000 / sorted[Math.floor(sorted.length / 2)]).toFixed(1) : 0,
+      lastEvents: game.events.slice(-6),
+    });
+    publish();
+  }
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+publish();
+
+// QA drive: inject inputs + look without pointer lock
+if (qa) {
+  window.__P6_DRIVE__ = {
+    set(partial) { Object.assign(driveOverride, partial); },
+    clear() { for (const k of Object.keys(driveOverride)) delete driveOverride[k]; },
+    teleport(x, z, newYaw = 0) { game.player.pos = [x, 0, z]; yaw = newYaw; },
+    hasten(sec = 2) { game.phaseT = Math.min(game.phaseT, sec); },
+    state: () => window.__P6_QA__,
+  };
+}
+</script>
+</body>
+</html>
