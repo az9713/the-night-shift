@@ -1,0 +1,89 @@
+{
+  "bpm": 100,
+  "notes": [
+    {
+      "midi": 60,
+      "name": "C4",
+      "onset": 0.0,
+      "duration": 0.56
+    },
+    {
+      "midi": 60,
+      "name": "C4",
+      "onset": 0.6,
+      "duration": 0.56
+    },
+    {
+      "midi": 67,
+      "name": "G4",
+      "onset": 1.2,
+      "duration": 0.56
+    },
+    {
+      "midi": 67,
+      "name": "G4",
+      "onset": 1.8,
+      "duration": 0.56
+    },
+    {
+      "midi": 69,
+      "name": "A4",
+      "onset": 2.4,
+      "duration": 0.56
+    },
+    {
+      "midi": 69,
+      "name": "A4",
+      "onset": 3.0,
+      "duration": 0.56
+    },
+    {
+      "midi": 67,
+      "name": "G4",
+      "onset": 3.6,
+      "duration": 1.16
+    },
+    {
+      "midi": 65,
+      "name": "F4",
+      "onset": 4.8,
+      "duration": 0.56
+    },
+    {
+      "midi": 65,
+      "name": "F4",
+      "onset": 5.4,
+      "duration": 0.56
+    },
+    {
+      "midi": 64,
+      "name": "E4",
+      "onset": 6.0,
+      "duration": 0.56
+    },
+    {
+      "midi": 64,
+      "name": "E4",
+      "onset": 6.6,
+      "duration": 0.56
+    },
+    {
+      "midi": 62,
+      "name": "D4",
+      "onset": 7.2,
+      "duration": 0.56
+    },
+    {
+      "midi": 62,
+      "name": "D4",
+      "onset": 7.8,
+      "duration": 0.56
+    },
+    {
+      "midi": 60,
+      "name": "C4",
+      "onset": 8.4,
+      "duration": 1.16
+    }
+  ]
+}

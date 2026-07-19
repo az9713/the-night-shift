@@ -1,0 +1,264 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Note Lifter — MP3 to MIDI</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%230d1117'/%3E%3Crect x='10' y='28' width='8' height='24' fill='%23ffa657'/%3E%3Crect x='22' y='18' width='8' height='34' fill='%23ffa657'/%3E%3Crect x='34' y='34' width='8' height='18' fill='%2358c4dd'/%3E%3Crect x='46' y='12' width='8' height='40' fill='%23ffa657'/%3E%3C/svg%3E">
+<style>
+  :root { color-scheme: dark; --bg:#0d1117; --panel:#161c24; --line:#2b3542; --ink:#e6edf3;
+          --muted:#8b98a5; --accent:#ffa657; --green:#56d364; --cyan:#58c4dd; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink);
+         font:14px/1.5 ui-monospace,"Cascadia Mono",Consolas,monospace; }
+  header { display:flex; flex-wrap:wrap; gap:12px; align-items:center; padding:14px 20px;
+           border-bottom:1px solid var(--line); }
+  h1 { font-size:16px; margin:0 14px 0 0; letter-spacing:.08em; }
+  h1 b { color:var(--accent); }
+  main { max-width:1080px; margin:0 auto; padding:18px 20px 40px; }
+  .method { color:var(--muted); font-size:12px; margin:0 0 16px; }
+  .row { display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin:12px 0; }
+  button, label.file { background:var(--panel); color:var(--ink); border:1px solid var(--line);
+           padding:9px 14px; cursor:pointer; font:inherit; min-height:40px; }
+  button:hover, label.file:hover { border-color:var(--accent); }
+  button:disabled { opacity:.4; cursor:default; }
+  button.primary { border-color:var(--accent); color:var(--accent); }
+  input[type=file] { display:none; }
+  .ctl { display:flex; align-items:center; gap:8px; background:var(--panel);
+         border:1px solid var(--line); padding:6px 12px; min-height:40px; }
+  .ctl input[type=range] { accent-color: var(--accent); }
+  .ctl input[type=number] { width:64px; background:var(--bg); color:var(--ink);
+        border:1px solid var(--line); padding:4px 6px; font:inherit; }
+  #status { padding:10px 14px; border:1px solid var(--line); background:var(--panel); margin:14px 0; }
+  #status.error { border-color:#f85149; color:#ffb3ad; }
+  canvas { width:100%; height:260px; display:block; background:var(--panel);
+           border:1px solid var(--line); }
+  #notelist { max-height:220px; overflow:auto; border:1px solid var(--line);
+              background:var(--panel); padding:10px 14px; white-space:pre; font-size:12px; }
+  .legend { color:var(--muted); font-size:12px; margin:6px 0 14px; }
+  .legend i { display:inline-block; width:10px; height:10px; margin-right:5px; }
+  a#dl { color:var(--green); }
+  footer { color:var(--muted); font-size:12px; padding:0 20px 24px; max-width:1080px; margin:0 auto; }
+</style>
+</head>
+<body>
+<header>
+  <h1>NOTE<b>LIFTER</b> · MP3 → MIDI</h1>
+  <label class="file">Upload MP3/WAV<input id="file" type="file" accept="audio/*"></label>
+  <button id="reload">Reload ./input.mp3</button>
+  <span class="ctl">Sensitivity <input id="sens" type="range" min="0" max="100" value="50">
+    <span id="sensval">0.50</span></span>
+  <span class="ctl">BPM <input id="bpm" type="number" min="30" max="240" value="100"></span>
+</header>
+<main>
+  <p class="method">Method: YIN pitch detection (cumulative-mean-normalized difference, 2048-sample
+  frames, 512 hop) + RMS silence gating + run-length note segmentation, quantized to a 16th-note
+  grid at the set BPM. Monophonic melodies only — chords are out of scope.</p>
+  <div id="status">Loading ./input.mp3 …</div>
+  <div class="row">
+    <button id="play-orig" class="primary" disabled>▶ Play original</button>
+    <button id="play-midi" class="primary" disabled>▶ Play MIDI</button>
+    <button id="stop" disabled>■ Stop</button>
+    <a id="dl" hidden download="transcription.mid">⬇ Download .mid</a>
+  </div>
+  <canvas id="roll" width="1040" height="260" aria-label="Piano roll of detected notes"></canvas>
+  <p class="legend"><i style="background:var(--accent)"></i>detected note
+     <i style="background:var(--cyan);margin-left:14px"></i>playhead</p>
+  <div id="notelist" aria-label="Detected note list"></div>
+</main>
+<footer>Runs entirely in your browser — audio never leaves this page.</footer>
+<script type="module">
+import { detectNotes, midiToName, midiToFreq } from './src/pitch.js';
+import { writeMidi } from './src/midi.js';
+
+const $ = (id) => document.getElementById(id);
+const qa = new URLSearchParams(location.search).has('qa');
+const qaState = { status: 'init', errors: [] };
+const publish = () => {
+  if (!qa) return;
+  window.__P3_QA__ = qaState;
+  document.documentElement.dataset.p3Qa = JSON.stringify(qaState);
+};
+window.addEventListener('error', (e) => { qaState.errors.push(String(e.message)); publish(); });
+window.addEventListener('unhandledrejection', (e) => { qaState.errors.push(String(e.reason)); publish(); });
+
+let audioCtx = null;
+const ctx = () => (audioCtx ??= new AudioContext());
+let buffer = null;        // decoded AudioBuffer
+let result = null;        // {frames, raw, quantized}
+let midiBytes = null;
+let playing = null;       // {source?, oscs?, startedAt, kind, duration}
+let rafHandle = 0;
+
+const status = (msg, isError = false) => {
+  const el = $('status');
+  el.textContent = msg;
+  el.classList.toggle('error', isError);
+  qaState.status = isError ? `error: ${msg}` : msg;
+  publish();
+};
+
+async function decode(arrayBuffer, label) {
+  try {
+    buffer = await ctx().decodeAudioData(arrayBuffer);
+  } catch {
+    status(`Could not decode "${label}" — is it a valid MP3/WAV?`, true);
+    return;
+  }
+  analyze(label);
+}
+
+function analyze(label) {
+  if (!buffer) return;
+  const mono = buffer.getChannelData(0);
+  const sensitivity = Number($('sens').value) / 100;
+  const bpm = Math.min(240, Math.max(30, Number($('bpm').value) || 100));
+  result = detectNotes(mono, buffer.sampleRate, { sensitivity, bpm });
+  const notes = result.quantized;
+  if (!notes.length) {
+    status(`Decoded ${label} (${buffer.duration.toFixed(1)}s) but detected no notes — try raising sensitivity.`, true);
+  } else {
+    status(`${label}: ${notes.length} notes detected in ${buffer.duration.toFixed(1)}s of audio.`);
+  }
+  midiBytes = writeMidi(notes, bpm);
+  const blob = new Blob([midiBytes], { type: 'audio/midi' });
+  const dl = $('dl');
+  dl.href && URL.revokeObjectURL(dl.href);
+  dl.href = URL.createObjectURL(blob);
+  dl.hidden = !notes.length;
+  $('play-orig').disabled = false;
+  $('play-midi').disabled = !notes.length;
+  $('notelist').textContent = notes.map((n) =>
+    `${midiToName(n.midi).padEnd(4)} @ ${n.onset.toFixed(2)}s, ${n.duration.toFixed(2)}s`).join('\n')
+    || 'No notes detected.';
+  drawRoll();
+  Object.assign(qaState, {
+    sampleRate: buffer.sampleRate,
+    samples: mono.length,
+    frameCount: result.frames.length,
+    noteCount: notes.length,
+    notes: notes.map((n) => ({ midi: n.midi, name: midiToName(n.midi), onset: +n.onset.toFixed(3), duration: +n.duration.toFixed(3) })),
+    midiBytes: midiBytes.length,
+    sensitivity, bpm,
+  });
+  publish();
+}
+
+function drawRoll(playhead = -1) {
+  const canvas = $('roll');
+  const g = canvas.getContext('2d');
+  g.fillStyle = '#161c24';
+  g.fillRect(0, 0, canvas.width, canvas.height);
+  if (!result?.quantized.length || !buffer) return;
+  const notes = result.quantized;
+  const total = Math.max(buffer.duration, ...notes.map((n) => n.onset + n.duration));
+  const lo = Math.min(...notes.map((n) => n.midi)) - 2;
+  const hi = Math.max(...notes.map((n) => n.midi)) + 2;
+  const x = (t) => (t / total) * canvas.width;
+  const y = (m) => canvas.height - ((m - lo + 1) / (hi - lo + 1)) * canvas.height;
+  const rowH = canvas.height / (hi - lo + 1);
+  g.strokeStyle = '#222b36';
+  for (let m = lo; m <= hi; m++) {
+    g.beginPath(); g.moveTo(0, y(m) + rowH / 2); g.lineTo(canvas.width, y(m) + rowH / 2); g.stroke();
+  }
+  g.fillStyle = '#ffa657';
+  for (const n of notes) g.fillRect(x(n.onset), y(n.midi), Math.max(3, x(n.duration)), rowH - 2);
+  g.fillStyle = '#8b98a5';
+  g.font = '11px monospace';
+  for (let m = lo + 2; m < hi; m += 2) g.fillText(midiToName(m), 4, y(m) + rowH - 2);
+  if (playhead >= 0) {
+    g.strokeStyle = '#58c4dd'; g.lineWidth = 2;
+    g.beginPath(); g.moveTo(x(playhead), 0); g.lineTo(x(playhead), canvas.height); g.stroke();
+  }
+}
+
+function stop() {
+  if (playing?.source) try { playing.source.stop(); } catch {}
+  if (playing?.oscs) for (const o of playing.oscs) try { o.stop(); } catch {}
+  playing = null;
+  cancelAnimationFrame(rafHandle);
+  drawRoll();
+  $('stop').disabled = true;
+  qaState.playback = 'stopped'; publish();
+}
+
+function animatePlayhead() {
+  if (!playing) return;
+  const t = ctx().currentTime - playing.startedAt;
+  if (t > playing.duration + 0.2) { stop(); return; }
+  drawRoll(t);
+  rafHandle = requestAnimationFrame(animatePlayhead);
+}
+
+$('play-orig').onclick = () => {
+  if (!buffer) return;
+  stop();
+  const source = ctx().createBufferSource();
+  source.buffer = buffer;
+  source.connect(ctx().destination);
+  source.start();
+  playing = { source, startedAt: ctx().currentTime, kind: 'original', duration: buffer.duration };
+  $('stop').disabled = false;
+  qaState.playback = 'original'; publish();
+  animatePlayhead();
+};
+
+$('play-midi').onclick = () => {
+  if (!result?.quantized.length) return;
+  stop();
+  const t0 = ctx().currentTime + 0.05;
+  const oscs = [];
+  const master = ctx().createGain();
+  master.gain.value = 0.5;
+  master.connect(ctx().destination);
+  for (const n of result.quantized) {
+    const osc = ctx().createOscillator();
+    const gain = ctx().createGain();
+    osc.type = 'triangle';
+    osc.frequency.value = midiToFreq(n.midi);
+    gain.gain.setValueAtTime(0, t0 + n.onset);
+    gain.gain.linearRampToValueAtTime(0.9, t0 + n.onset + 0.02);
+    gain.gain.setValueAtTime(0.9, t0 + n.onset + n.duration - 0.05);
+    gain.gain.linearRampToValueAtTime(0, t0 + n.onset + n.duration);
+    osc.connect(gain).connect(master);
+    osc.start(t0 + n.onset);
+    osc.stop(t0 + n.onset + n.duration + 0.05);
+    oscs.push(osc);
+  }
+  const last = result.quantized.at(-1);
+  playing = { oscs, startedAt: t0, kind: 'midi', duration: last.onset + last.duration };
+  $('stop').disabled = false;
+  qaState.playback = 'midi'; publish();
+  animatePlayhead();
+};
+
+$('stop').onclick = stop;
+$('sens').oninput = () => { $('sensval').textContent = (Number($('sens').value) / 100).toFixed(2); };
+$('sens').onchange = () => buffer && analyze('current audio');
+$('bpm').onchange = () => buffer && analyze('current audio');
+
+$('file').onchange = async (e) => {
+  const f = e.target.files[0];
+  if (!f) return;
+  stop();
+  status(`Decoding ${f.name} …`);
+  await decode(await f.arrayBuffer(), f.name);
+};
+
+async function loadDefault() {
+  stop();
+  status('Loading ./input.mp3 …');
+  try {
+    const res = await fetch('./input.mp3');
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    await decode(await res.arrayBuffer(), 'input.mp3');
+  } catch (err) {
+    status(`Could not load ./input.mp3 (${err.message}). Upload a file instead.`, true);
+  }
+}
+$('reload').onclick = loadDefault;
+loadDefault();
+publish();
+</script>
+</body>
+</html>
