@@ -2,7 +2,13 @@
 
 Seven software projects built and shipped by an **autonomous software factory** in one unattended overnight run — 2 hours 49 minutes, zero human inputs — followed by an honest teardown of how it worked and where its own record overstates.
 
-**Start here: [FACTORY.md](FACTORY.md)** — the full teardown: the four-loop anatomy, the comparison against a reference cloud factory, sixteen unknown-unknowns, and the blueprint for a factory that survives its own runtime. An interactive version lives in [factory-explorer.html](factory-explorer.html).
+**Start here: [FACTORY.md](FACTORY.md)** — the full teardown: the four-loop anatomy, the comparison against a reference cloud factory, sixteen unknown-unknowns, and the blueprint for a factory that survives its own runtime.
+
+The same teardown also exists as an **interactive explorer** — a chart-recorder timeline you can scrub, a kill switch that shows what a dead session loses, a filterable verification matrix, and a scatter plot of the autonomy ceiling. GitHub can't execute a live page inside a README, so the image below is a clickable, repository-owned render — click through for the real thing:
+
+[![Open the interactive explorer](docs/assets/factory-explorer-preview.jpg)](https://nightshift-explorer.vercel.app/)
+
+**[Open the interactive explorer](https://nightshift-explorer.vercel.app/)** · source: [factory-explorer.html](factory-explorer.html)
 
 ## The run
 
