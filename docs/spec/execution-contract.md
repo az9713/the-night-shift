@@ -1,6 +1,6 @@
 # Prompt 3 execution contract — MP3-to-MIDI converter
 
-Hardened from [kimi-k3-prompts.md](../../../kimi-k3-prompts.md) (prompt 3). Original unchanged.
+Hardened from the original benchmark prompt (see [docs/prompts.md](../../../docs/prompts.md)) (prompt 3). Original unchanged.
 
 ## Deliverable
 
@@ -24,7 +24,7 @@ The benchmark references `./input.mp3` that we don't have. We synthesize it ours
 | G2 White-box | Vitest: YIN detects known sine frequencies within ±20 cents; segmentation recovers a synthetic note sequence; MIDI writer bytes round-trip parse (header, tempo, VLQ, note pairing); quantization math |
 | G3 End-to-end accuracy | Decode input.mp3 in the real browser, run detection, compare against ground-truth.json: ≥ 12/14 notes correct pitch, onsets within ±120 ms (one 16th at 100 BPM), no more than 2 spurious notes |
 | G4 Browser QA | Local + deployed: auto-load works, upload works, both playbacks audible-scheduled (verified via exposed QA state), piano-roll renders N detected notes, .mid download produced and byte-validated, sensitivity/BPM controls change output, no console errors |
-| G5 Deploy | Isolated Vercel project `mp3-midi-kimi-k3-prompt3`, public, deployed regression of G3/G4 |
+| G5 Deploy | Isolated Vercel project `nightshift-mp3-midi`, public, deployed regression of G3/G4 |
 | G6 Done | All gates pass; ledger closed |
 
 ## Engineering constraints
