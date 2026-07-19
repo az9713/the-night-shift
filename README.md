@@ -47,3 +47,7 @@ Full detail, including two commits that were mislabeled and then corrected, in [
 ## Credit
 
 The seven work items were adapted from the model-evaluation benchmark by **Pat Simmons** — see [his video](https://www.youtube.com/watch?v=lPP6iBRuzgA). The originals are his; this repo contains the factory's hardened revisions and its builds. The factory experiment itself is unrelated to any particular model under test.
+
+## License
+
+[MIT](LICENSE) for the code and documentation in this repository. That covers the pipelines, tests, source, and every doc — not Pat Simmons's own prompts (paraphrased and linked, never reproduced here — watch his video for the originals) or the AI-generated images/video/audio assets, which may carry their own generation-platform terms.
