@@ -32,7 +32,7 @@ export const emptyInput = () => ({
   yaw: 0, pitch: 0,
 });
 
-// THE control-correctness core (the K3 failure Pat caught was exactly here).
+// THE control-correctness core (the benchmark failure Pat caught was exactly here).
 // three.js convention: yaw=0 looks down -Z; yaw grows counter-clockwise.
 export function moveVector(yaw, input) {
   const fx = -Math.sin(yaw), fz = -Math.cos(yaw);   // camera forward on ground plane

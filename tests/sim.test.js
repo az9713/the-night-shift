@@ -14,7 +14,7 @@ function run(s, ticks, inputFn) {
 }
 const skipBuy = (s) => run(s, Math.ceil(BUY_SECONDS / TICK) + 2, () => I());
 
-describe('control correctness — the K3 failure class', () => {
+describe('control correctness — the benchmark failure class', () => {
   it('W moves exactly forward relative to look direction at every tested yaw', () => {
     for (const yaw of [0, Math.PI / 2, Math.PI, -Math.PI / 2, 0.7]) {
       const [mx, mz] = moveVector(yaw, I({ forward: true }));
