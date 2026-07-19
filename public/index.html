@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MERIDIAN — Sylvan M-01 Automatic</title>
+<meta name="description" content="The Sylvan M-01: a 39mm automatic in 904L steel with a forest sunburst dial. Meridian's first caliber.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%230c0e0d'/%3E%3Ccircle cx='32' cy='32' r='20' fill='none' stroke='%23c8cfc9' stroke-width='3'/%3E%3Cpath d='M32 32 L32 18 M32 32 L41 37' stroke='%23c8cfc9' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E">
+<style>
+  :root { color-scheme: dark;
+    --bg: #0c0e0d; --panel: #12514 ; --ink: #e9e7e0; --muted: #8f948f;
+    --line: #262a28; --green: #1d4a38; --green-bright: #3d8a67;
+    --serif: Georgia, "Times New Roman", serif;
+    --sans: "Segoe UI", system-ui, sans-serif; }
+  * { box-sizing: border-box; margin: 0; }
+  html { scroll-behavior: smooth; }
+  body { background: var(--bg); color: var(--ink); font: 16px/1.6 var(--sans); }
+
+  header { position: fixed; z-index: 10; top: 0; left: 0; right: 0;
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 26px 48px; mix-blend-mode: difference; }
+  .brand { font: 600 20px var(--sans); letter-spacing: .55em; }
+  header nav a { color: var(--ink); text-decoration: none; font-size: 13px;
+    letter-spacing: .2em; margin-left: 34px; text-transform: uppercase; opacity: .8; }
+  header nav a:hover { opacity: 1; }
+
+  #hero { position: relative; height: 100vh; min-height: 640px; overflow: hidden; }
+  #scene { position: absolute; inset: 0; }
+  #scene canvas { display: block; cursor: grab; touch-action: pan-y; }
+  #scene canvas:active { cursor: grabbing; }
+  .hero-copy { position: absolute; z-index: 5; left: 48px; bottom: 84px; max-width: 560px;
+    text-align: left; pointer-events: none; }
+  .hero-copy .kicker { font-size: 13px; letter-spacing: .5em; color: var(--muted);
+    text-transform: uppercase; }
+  .hero-copy h1 { font: 400 clamp(44px, 6vw, 84px)/1.05 var(--serif); letter-spacing: .04em;
+    margin: 14px 0 10px; }
+  .hero-copy p { color: var(--muted); font-size: 15px; letter-spacing: .08em; }
+  .hero-copy .cta { pointer-events: auto; display: inline-block; margin-top: 26px;
+    padding: 15px 44px; border: 1px solid var(--ink); color: var(--ink);
+    text-decoration: none; font-size: 13px; letter-spacing: .3em; text-transform: uppercase;
+    transition: background .3s, color .3s; }
+  .hero-copy .cta:hover { background: var(--ink); color: var(--bg); }
+  .hint { position: absolute; z-index: 5; top: 50%; right: 42px; transform: translateY(-50%);
+    writing-mode: vertical-rl; font-size: 11px; letter-spacing: .4em; color: var(--muted);
+    text-transform: uppercase; }
+
+  section.block { max-width: 1180px; margin: 0 auto; padding: 130px 48px; }
+  .reveal { opacity: 0; transform: translateY(34px); transition: opacity .9s ease, transform .9s ease; }
+  .reveal.in { opacity: 1; transform: none; }
+  .eyebrow { font-size: 12px; letter-spacing: .45em; color: var(--green-bright);
+    text-transform: uppercase; margin-bottom: 18px; }
+  h2 { font: 400 clamp(30px, 3.6vw, 52px)/1.15 var(--serif); max-width: 720px; }
+  .lede { color: var(--muted); max-width: 620px; margin-top: 24px; font-size: 17px; }
+
+  .specs { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    border-top: 1px solid var(--line); margin-top: 64px; }
+  .spec { padding: 34px 28px 30px 0; border-bottom: 1px solid var(--line); }
+  .spec dt { font-size: 12px; letter-spacing: .3em; color: var(--muted); text-transform: uppercase; }
+  .spec dd { font: 400 26px var(--serif); margin-top: 12px; }
+  .spec dd small { display: block; font: 14px var(--sans); color: var(--muted); margin-top: 6px; }
+
+  .closing { text-align: center; padding: 150px 48px 160px; border-top: 1px solid var(--line); }
+  .closing h2 { margin: 0 auto 18px; }
+  .closing p { color: var(--muted); max-width: 520px; margin: 0 auto 36px; }
+  .closing .cta { display: inline-block; padding: 16px 52px; background: var(--ink); color: var(--bg);
+    text-decoration: none; font-size: 13px; letter-spacing: .3em; text-transform: uppercase; }
+  footer { padding: 30px 48px 44px; color: #5d625d; font-size: 12px; letter-spacing: .12em;
+    display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+
+  @media (max-width: 640px) {
+    header { padding: 20px 22px; }
+    .hero-copy { left: 22px; right: 22px; max-width: none; }
+    header nav a { margin-left: 18px; font-size: 11px; }
+    section.block { padding: 90px 22px; }
+    .hero-copy { bottom: 44px; }
+    .hint { display: none; }
+    .closing { padding: 110px 22px; }
+    footer { padding: 24px 22px 34px; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">MERIDIAN</div>
+  <nav><a href="#craft">Craft</a><a href="#specs">Specification</a><a href="#reserve">Reserve</a></nav>
+</header>
+
+<div id="hero">
+  <div id="scene"></div>
+  <div class="hero-copy">
+    <div class="kicker">Meridian · First Caliber</div>
+    <h1>Sylvan M-01</h1>
+    <p>Thirty-nine millimetres of 904L steel. A forest, under glass.</p>
+    <a class="cta" href="#reserve">Reserve yours</a>
+  </div>
+  <div class="hint">Drag to turn the watch</div>
+</div>
+
+<section class="block reveal" id="craft">
+  <div class="eyebrow">The dial</div>
+  <h2>Cut from a single sheet of light.</h2>
+  <p class="lede">The Sylvan's sunburst dial is brushed outward from its centre in one pass,
+  so the green moves as you do — pine-dark at rest, mineral-bright at angle. Applied markers
+  are milled, polished, and set by hand. Nothing is printed that could be built.</p>
+</section>
+
+<section class="block reveal" id="specs">
+  <div class="eyebrow">Specification</div>
+  <h2>Engineered plainly. Finished obsessively.</h2>
+  <dl class="specs">
+    <div class="spec"><dt>Movement</dt><dd>Caliber M-01<small>In-house automatic · 26 jewels · 70-hour power reserve · −2/+4 s per day</small></dd></div>
+    <div class="spec"><dt>Case</dt><dd>39 mm · 904L steel<small>11.2 mm tall · brushed with polished chamfers · 20 mm lug width</small></dd></div>
+    <div class="spec"><dt>Crystal</dt><dd>Domed sapphire<small>Inner anti-reflective coating</small></dd></div>
+    <div class="spec"><dt>Water resistance</dt><dd>100 metres<small>Screw-down fluted crown</small></dd></div>
+    <div class="spec"><dt>Dial</dt><dd>Forest sunburst<small>Applied polished markers · dauphine hands · date at 3</small></dd></div>
+    <div class="spec"><dt>Bracelet</dt><dd>Three-link 904L<small>Tool-free micro-adjust clasp</small></dd></div>
+  </dl>
+</section>
+
+<section class="closing reveal" id="reserve">
+  <div class="eyebrow">Edition of 500</div>
+  <h2>The first Meridian.</h2>
+  <p>Each Sylvan M-01 is numbered, regulated in five positions, and delivered with its
+  timing certificate. Allocation opens quarterly.</p>
+  <a class="cta" href="#reserve">Request an allocation</a>
+</section>
+
+<footer>
+  <span>MERIDIAN WATCH CO. — a fictional brand built for a rendering benchmark.</span>
+  <span>Sylvan M-01 · 2026</span>
+</footer>
+
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.185.1/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.185.1/examples/jsm/"
+} }
+</script>
+<script type="module" src="./src/watch.js"></script>
+<script>
+  // scroll reveals — native IntersectionObserver
+  const io = new IntersectionObserver((entries) => {
+    for (const e of entries) if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); }
+  }, { threshold: 0.18 });
+  document.querySelectorAll('.reveal').forEach((el) => io.observe(el));
+</script>
+</body>
+</html>
