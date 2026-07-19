@@ -132,6 +132,8 @@ This is looser than the charter's language — and it is the correct design, dis
 
 ## 4. Comparison: this run vs. cloud-factory-demo
 
+**Reference:** [github.com/warpdotdev-demos/cloud-factory-demo](https://github.com/warpdotdev-demos/cloud-factory-demo). Picked for one reason: it was available, and it is a clean, canonical example of a simple cloud factory — organized around six legible stages (**Triage, Spec'ing, Implementation, Code review, Verification, Monitoring**) that map onto recognizable software-development moments. That makes it a reasonable base reference for this comparison, not a claim that it is the best or only factory design out there.
+
 `warpdotdev-demos/cloud-factory-demo` is the reference proxy for "a software factory" as of July 2026: GitHub Actions as triggers, the Oz platform running agents, stages as skills (`.agents/skills/{triage,spec,implementation,review-pr,improve-review-pr}/SKILL.md`), GitHub issue labels as the state machine ("Ready to spec" / "Ready to implement"), specs frozen as `specs/<slug>/PRODUCT.md` + `TECH.md`, a `validate-changes-match-specs` skill, `review.json` as machine-readable review output, and a daily `improve-review-pr.yml` that feeds human reactions back into the review skill.
 
 ### Dimension by dimension
