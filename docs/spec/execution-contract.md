@@ -1,6 +1,6 @@
 # Prompt 5 execution contract — luxury watch product page
 
-Hardened from [kimi-k3-prompts.md](../../../kimi-k3-prompts.md) (prompt 5). Original unchanged.
+Hardened from the original benchmark prompt (see [docs/prompts.md](../../../docs/prompts.md)) (prompt 5). Original unchanged.
 
 ## Deliverable
 
@@ -28,7 +28,7 @@ Single-page product launch site (static) for an invented luxury watch brand, wit
 | G2 Page | Hero + positioning line + ≥4 real spec callouts (movement, case size, water resistance, materials — coherent invented product) + one CTA; real copy, no lorem ipsum; smooth scroll reveals |
 | G3 Rubric | Screenshot vs reference board scored ≥ 12/14, no zero |
 | G4 Responsive | 1440×900 and 390×844 render without overflow/clipping of hero or CTA |
-| G5 Deploy | Isolated `watch-page-kimi-k3-prompt5`, public alias, deployed regression + console clean |
+| G5 Deploy | Isolated `nightshift-watch-page`, public alias, deployed regression + console clean |
 | G6 Done | Ledger closed; source pushed to private az9713 repo |
 
 QA instrumentation: `?qa=1` exposes renderer info, fps sample, camera state, auto-rotate flag.

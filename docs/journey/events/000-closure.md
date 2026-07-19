@@ -34,7 +34,7 @@ Static page, no build step: importmap-pinned three@0.185.1 (matching prompt 1). 
 | G2 Page | 6 spec callouts, 2 CTAs, reveals fire on scroll, zero lorem ipsum |
 | G3 Rubric | Independent adversarial verifier: first pass **9/14 FAIL** with prioritized fixes; after applying them, rescore **12/14 PASS**, no zero (metal 2, crystal 1, dial 2, lighting 2, composition 2, typography 2, tells 1) |
 | G4 Responsive | 390-wide: no horizontal overflow |
-| G5 Deploy | `watch-page-kimi-k3-prompt5`, alias HTTP 200 public, deployed QA clean (59,968 triangles, no errors, no warnings) |
+| G5 Deploy | `nightshift-watch-page`, alias HTTP 200 public, deployed QA clean (59,968 triangles, no errors, no warnings) |
 | G6 Done | Ledger closed; pushed to private az9713/prompt-05-watch-page |
 
 ## Retro
