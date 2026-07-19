@@ -42,7 +42,7 @@ This wasn't all one model. Which Claude model did which part, reconstructed from
 | Live explorer deployment + README preview embed, the repo privacy audit, the §6 source-link fix | **Sonnet 5** |
 | This provenance section, and the commit-history correction below | **Opus 4.8** |
 
-Full detail, including two commits that were mislabeled and then corrected, in [FACTORY.md](FACTORY.md#model-provenance).
+Full detail, including two commits that were mislabeled and then corrected, in [FACTORY.md](FACTORY.md#84-model-provenance).
 
 ## Credit
 

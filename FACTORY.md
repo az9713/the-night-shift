@@ -6,7 +6,7 @@
 
 **What this document is for:** not a victory lap. It is the specification of the factory that does not yet exist, written by documenting the one that ran once. Section 7 is the build plan for the next one — a factory that can run for days or weeks instead of one night.
 
-**Not one model.** The autonomous run itself was Fable 5 throughout. Documenting it afterward pulled in Opus 4.8 and Sonnet 5 as well — see [Model provenance](#model-provenance) in the appendix for the phase-by-phase breakdown, including two commits that were mislabeled and then corrected.
+**Not one model.** The autonomous run itself was Fable 5 throughout. Documenting it afterward pulled in Opus 4.8 and Sonnet 5 as well — see [Model provenance](#84-model-provenance) in the appendix for the phase-by-phase breakdown, including two commits that were mislabeled and then corrected.
 
 ---
 
@@ -320,7 +320,7 @@ Git corroboration: commits for p3/p4/p9/p5/p6 span 23:14–01:31 PDT (= 06:14–
 2. Prompts 7/8: no version control — one `git init` + private push each.
 3. Watch page: 2 open rubric points (crystal edge highlight, bracelet anisotropy) — cosmetic, below gate threshold.
 
-### 8.4 Model provenance {#model-provenance}
+### 8.4 Model provenance
 
 This document, its explorer, and the repository it lives in were not produced by one model. The autonomous run itself ran on a single model throughout; documenting it afterward — across several resumed sessions — pulled in two more.
 

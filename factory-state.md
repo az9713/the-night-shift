@@ -4,16 +4,18 @@ Run: 2026-07-18 evening → 2026-07-19 early morning, fully autonomous (user awa
 
 ## Final results — 7/7 prompts closed
 
-| Prompt | Deliverable | Live URL | Repo (private) | Verification headline |
+| Prompt | Deliverable | Live URL | Source | Verification headline |
 |---|---|---|---|---|
-| 7 biography | prompt-07-biography/biography.md | n/a | workspace only | 208 words; adversarial verifier: 0 fabrications; 2 wording repairs (channel-name claim in the benchmark prompt itself was wrong) |
-| 8 trailer | prompt-08-trailer/trailer-shot-plan.md + **trailer.mp4** (31.5 s) | n/a | workspace only | Verifier failed first draft's stateless-generator continuity → repaired pre-render; 6/6 clips generated (seedance_2_0_mini), duplicate title card caught by frame extraction |
-| 3 MP3→MIDI | prompt-03-mp3-midi/ (NOTELIFTER) | https://nightshift-mp3-midi.vercel.app/ | az9713/prompt-03-mp3-midi | Self-synthesized ground truth: **14/14 notes exact** in real Chrome, local + deployed; 9/9 vitest; .mid byte-validated |
-| 4 fighting game | prompt-04-fighting-game/ (IRON RING) | https://nightshift-fighting-game.vercel.app/ | az9713/prompt-04-fighting-game | 15/15 vitest (no-attack-in-hitstun, specials, chip); browser: contested best-of-3 vs CPU (2–1), all moves + 2P keys verified |
-| 9 motion MP4 | prompt-09-motion-explainer/render/explainer.mp4 (20 s 1080p) | n/a | az9713/prompt-09-motion-explainer | HyperFrames check 0 errors; frame extraction caught a selector bug the linter passed; 5 beats all custom GSAP |
-| 5 watch page | prompt-05-watch-page/ (MERIDIAN Sylvan M-01) | https://nightshift-watch-page.vercel.app/ | az9713/prompt-05-watch-page | Independent rubric: 9/14 FAIL → fixes → **12/14 PASS**; 9 visual iterations; orbit/idle-rotate/responsive/console clean |
-| 6 CS2 clone | prompt-06-cs2-clone/ (SANDLINE) | https://nightshift-cs2-clone.vercel.app/ | az9713/prompt-06-cs2-clone | 18/18 vitest incl. dedicated camera-relative-controls suite (the benchmark failure class); browser: axes, kill+feed, plant→bomb, two-way firefight; deployed regression clean |
+| 7 biography | prompt-07-biography/biography.md | n/a | [this repo](prompt-07-biography/) | 208 words; adversarial verifier: 0 fabrications; 2 wording repairs (channel-name claim in the benchmark prompt itself was wrong) |
+| 8 trailer | prompt-08-trailer/trailer-shot-plan.md + **trailer.mp4** (31.5 s) | n/a | [this repo](prompt-08-trailer/) | Verifier failed first draft's stateless-generator continuity → repaired pre-render; 6/6 clips generated (seedance_2_0_mini), duplicate title card caught by frame extraction |
+| 3 MP3→MIDI | prompt-03-mp3-midi/ (NOTELIFTER) | https://nightshift-mp3-midi.vercel.app/ | [this repo](prompt-03-mp3-midi/) | Self-synthesized ground truth: **14/14 notes exact** in real Chrome, local + deployed; 9/9 vitest; .mid byte-validated |
+| 4 fighting game | prompt-04-fighting-game/ (IRON RING) | https://nightshift-fighting-game.vercel.app/ | [this repo](prompt-04-fighting-game/) | 15/15 vitest (no-attack-in-hitstun, specials, chip); browser: contested best-of-3 vs CPU (2–1), all moves + 2P keys verified |
+| 9 motion MP4 | prompt-09-motion-explainer/render/explainer.mp4 (20 s 1080p) | n/a | [this repo](prompt-09-motion-explainer/) | HyperFrames check 0 errors; frame extraction caught a selector bug the linter passed; 5 beats all custom GSAP |
+| 5 watch page | prompt-05-watch-page/ (MERIDIAN Sylvan M-01) | https://nightshift-watch-page.vercel.app/ | [this repo](prompt-05-watch-page/) | Independent rubric: 9/14 FAIL → fixes → **12/14 PASS**; 9 visual iterations; orbit/idle-rotate/responsive/console clean |
+| 6 CS2 clone | prompt-06-cs2-clone/ (SANDLINE) | https://nightshift-cs2-clone.vercel.app/ | [this repo](prompt-06-cs2-clone/) | 18/18 vitest incl. dedicated camera-relative-controls suite (the benchmark failure class); browser: axes, kill+feed, plant→bomb, two-way firefight; deployed regression clean |
 | 10 | **SKIPPED** per user decision (private-repo dependency) | | | |
+
+*Note: prompts 3–6 and 9 originally shipped as separate standalone private repos (named in the append-only journey ledgers below as their push destination at the time). Those standalone repos were later consolidated into this single repository and deleted — the ledgers are left as written, since they're historically accurate for when they were recorded, but the repo names they cite (e.g. `az9713/prompt-03-mp3-midi`) no longer exist as separate repos. This one does.*
 
 ## Resources
 
