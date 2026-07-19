@@ -1,0 +1,16 @@
+node_modules/
+.vercel/
+renders/
+# local-only: supervised precursors + verbatim benchmark originals
+prompt-01-command-center/
+prompt-02-weather-forecast/
+kimi-k3-prompts.md
+prompt-1-development-journey.md
+prompt-2-development-journey.md
+prompt-2-revised.md
+# local-only: source materials and session transcripts (Pat's content / personal)
+.ignore/
+simmonsbench-agent-fanout-main/
+transcript.txt
+gpt5.6_summary.txt
+README.txt

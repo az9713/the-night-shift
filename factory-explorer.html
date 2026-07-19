@@ -1,0 +1,1340 @@
+<title>The Night Shift — teardown of an autonomous software factory</title>
+
+<style>
+  :root {
+    --ground: #E7E9EB;
+    --surface: #F3F4F5;
+    --surface-2: #DDE0E3;
+    --ink: #15181B;
+    --ink-2: #4C535A;
+    --ink-3: #737C84;
+    --rule: #C4CACF;
+    --rule-2: #AEB6BC;
+    --accent: #B4550F;
+    --accent-soft: #EBD9C9;
+    --pass: #2C6349;
+    --fail: #9E3220;
+    --defer: #8A6510;
+    --dead: #A9AFB4;
+
+    --display: 'Oswald', 'Roboto Condensed', 'Arial Narrow', 'Helvetica Neue Condensed', Impact, sans-serif;
+    --body: Charter, 'Bitstream Charter', 'Sitka Text', Cambria, Georgia, 'Times New Roman', serif;
+    --mono: ui-monospace, 'Cascadia Mono', 'SF Mono', Consolas, 'DejaVu Sans Mono', monospace;
+
+    --col: 68ch;
+    --pad: clamp(1rem, 4vw, 2.5rem);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --ground: #111417;
+      --surface: #191D21;
+      --surface-2: #22282D;
+      --ink: #E3E7EA;
+      --ink-2: #98A2AA;
+      --ink-3: #6E777E;
+      --rule: #2B3238;
+      --rule-2: #3A424A;
+      --accent: #E08540;
+      --accent-soft: #33261B;
+      --pass: #5EA47C;
+      --fail: #D26E59;
+      --defer: #CFA23E;
+      --dead: #454D53;
+    }
+  }
+  :root[data-theme="light"] {
+    --ground: #E7E9EB; --surface: #F3F4F5; --surface-2: #DDE0E3;
+    --ink: #15181B; --ink-2: #4C535A; --ink-3: #737C84;
+    --rule: #C4CACF; --rule-2: #AEB6BC;
+    --accent: #B4550F; --accent-soft: #EBD9C9;
+    --pass: #2C6349; --fail: #9E3220; --defer: #8A6510; --dead: #A9AFB4;
+  }
+  :root[data-theme="dark"] {
+    --ground: #111417; --surface: #191D21; --surface-2: #22282D;
+    --ink: #E3E7EA; --ink-2: #98A2AA; --ink-3: #6E777E;
+    --rule: #2B3238; --rule-2: #3A424A;
+    --accent: #E08540; --accent-soft: #33261B;
+    --pass: #5EA47C; --fail: #D26E59; --defer: #CFA23E; --dead: #454D53;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--body);
+    font-size: 17px;
+    line-height: 1.62;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 0 var(--pad); }
+  .col { max-width: var(--col); }
+
+  h1, h2, h3, h4, .disp {
+    font-family: var(--display);
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    text-wrap: balance;
+    margin: 0;
+  }
+
+  .mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+  }
+
+  /* ---------- masthead ---------- */
+  .mast {
+    border-bottom: 1px solid var(--rule);
+    padding: clamp(2.5rem, 7vw, 5rem) 0 clamp(1.5rem, 4vw, 2.5rem);
+  }
+  .mast-tag {
+    display: flex; align-items: center; gap: 0.6rem;
+    font-family: var(--mono); font-size: 0.7rem;
+    letter-spacing: 0.16em; text-transform: uppercase; color: var(--ink-3);
+    margin-bottom: 1.6rem;
+  }
+  .lamp {
+    width: 9px; height: 9px; border-radius: 50%;
+    background: var(--accent); flex: none;
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent);
+  }
+  h1 {
+    font-size: clamp(2.6rem, 8vw, 5.2rem);
+    line-height: 0.93;
+    letter-spacing: -0.005em;
+    text-transform: uppercase;
+  }
+  h1 span { color: var(--accent); }
+  .dek {
+    max-width: 58ch; margin-top: 1.5rem;
+    font-size: clamp(1.02rem, 2.2vw, 1.2rem); color: var(--ink-2);
+  }
+  .mast-meta {
+    margin-top: 2rem; display: flex; flex-wrap: wrap; gap: 0.5rem 1.75rem;
+    font-family: var(--mono); font-size: 0.72rem; color: var(--ink-3);
+    letter-spacing: 0.06em;
+  }
+
+  /* ---------- sections ---------- */
+  section { border-bottom: 1px solid var(--rule); padding: clamp(3rem, 7vw, 5rem) 0; }
+  .sec-head { display: flex; gap: 1.25rem; align-items: baseline; margin-bottom: 2rem; }
+  .sec-num {
+    font-family: var(--mono); font-size: 0.78rem; color: var(--accent);
+    letter-spacing: 0.1em; flex: none; padding-top: 0.35rem;
+  }
+  h2 { font-size: clamp(1.6rem, 4vw, 2.4rem); line-height: 1.05; text-transform: uppercase; }
+  .sec-sub { color: var(--ink-2); margin-top: 0.6rem; max-width: 62ch; font-size: 1rem; }
+  h3 { font-size: 1.12rem; text-transform: uppercase; letter-spacing: 0.06em; margin: 2.5rem 0 0.9rem; }
+  p { margin: 0 0 1.1rem; }
+  .col > p:last-child { margin-bottom: 0; }
+  a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+  strong { font-weight: 700; }
+  em.term { font-style: normal; font-family: var(--mono); font-size: 0.88em; color: var(--ink-2); }
+
+  /* ---------- instrument panel ---------- */
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    margin: 2rem 0;
+  }
+  .panel-head {
+    display: flex; justify-content: space-between; align-items: center; gap: 1rem;
+    flex-wrap: wrap;
+    padding: 0.75rem 1.1rem;
+    border-bottom: 1px solid var(--rule);
+    font-family: var(--mono); font-size: 0.7rem;
+    letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-3);
+  }
+  .panel-body { padding: 1.4rem 1.1rem; }
+  .scroll-x { overflow-x: auto; }
+
+  /* ---------- stat strip ---------- */
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); border-top: 1px solid var(--rule); }
+  .stat { padding: 1.1rem 1.1rem 1.2rem; border-bottom: 1px solid var(--rule); border-right: 1px solid var(--rule); }
+  .stat:last-child { border-right: none; }
+  .stat-v { font-family: var(--display); font-size: clamp(1.7rem, 4.5vw, 2.5rem); line-height: 1; letter-spacing: 0.01em; }
+  .stat-v.accent { color: var(--accent); }
+  .stat-l { font-family: var(--mono); font-size: 0.66rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-3); margin-top: 0.5rem; }
+
+  /* ---------- table ---------- */
+  table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+  th, td { text-align: left; padding: 0.6rem 0.8rem; border-bottom: 1px solid var(--rule); vertical-align: top; }
+  th {
+    font-family: var(--mono); font-size: 0.66rem; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--ink-3); font-weight: 400;
+    border-bottom: 1px solid var(--rule-2);
+  }
+  td.num { font-family: var(--mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  tbody tr:last-child td { border-bottom: none; }
+
+  .chip {
+    display: inline-block; font-family: var(--mono); font-size: 0.64rem;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    padding: 0.15rem 0.45rem; border: 1px solid currentColor; white-space: nowrap;
+  }
+  .chip.pass { color: var(--pass); }
+  .chip.fail { color: var(--fail); }
+  .chip.defer { color: var(--defer); }
+  .chip.accent { color: var(--accent); }
+
+  /* ---------- buttons / controls ---------- */
+  .btn {
+    font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.1em; text-transform: uppercase;
+    padding: 0.42rem 0.8rem; background: transparent; color: var(--ink-2);
+    border: 1px solid var(--rule-2); cursor: pointer; transition: background .15s, color .15s, border-color .15s;
+  }
+  .btn:hover { color: var(--ink); border-color: var(--ink-3); }
+  .btn[aria-pressed="true"], .btn.on { background: var(--accent); border-color: var(--accent); color: var(--ground); }
+  .btn.danger { color: var(--fail); border-color: color-mix(in srgb, var(--fail) 55%, transparent); }
+  .btn.danger:hover { background: var(--fail); color: var(--ground); border-color: var(--fail); }
+  .btn:focus-visible, [tabindex]:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .ctrls { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+
+  /* ---------- loops ---------- */
+  .loops { display: grid; grid-template-columns: minmax(280px, 1fr) minmax(260px, 1.1fr); gap: 1.5rem; align-items: start; }
+  @media (max-width: 720px) { .loops { grid-template-columns: 1fr; } }
+  .loop-svg { width: 100%; height: auto; display: block; }
+  .loop-ring { cursor: pointer; }
+  .loop-ring rect { transition: fill .18s, stroke .18s; }
+  .loop-ring text { font-family: var(--mono); font-size: 9.5px; letter-spacing: 0.1em; text-transform: uppercase; }
+  .loop-detail h4 { font-size: 1rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--accent); }
+  .loop-detail .lead { font-size: 0.95rem; color: var(--ink); margin: 0.6rem 0 1rem; }
+  .loop-detail ul { margin: 0; padding-left: 1.1rem; font-size: 0.88rem; color: var(--ink-2); }
+  .loop-detail li { margin-bottom: 0.45rem; }
+  .loop-fate { margin-top: 1rem; padding-top: 0.9rem; border-top: 1px solid var(--rule); font-family: var(--mono); font-size: 0.72rem; color: var(--ink-3); }
+
+  /* ---------- timeline ---------- */
+  .tl-track { position: relative; height: 264px; margin-top: 0.5rem; cursor: crosshair; }
+  .tl-rows { position: absolute; inset: 0; }
+  .tl-row { position: absolute; left: 0; right: 0; height: 22px; }
+  .tl-bar {
+    position: absolute; height: 22px; background: var(--surface-2);
+    border: 1px solid var(--rule-2); display: flex; align-items: center;
+    padding: 0 0.4rem; overflow: hidden;
+    font-family: var(--mono); font-size: 0.64rem; letter-spacing: 0.06em; white-space: nowrap;
+    transition: opacity .3s, background .3s, border-color .3s, filter .3s;
+  }
+  .tl-bar.build { background: color-mix(in srgb, var(--accent) 22%, var(--surface)); border-color: color-mix(in srgb, var(--accent) 45%, transparent); }
+  .tl-bar.verif { background: color-mix(in srgb, var(--pass) 22%, var(--surface)); border-color: color-mix(in srgb, var(--pass) 50%, transparent); height: 11px; font-size: 0.55rem; letter-spacing: 0.04em; padding: 0 0.3rem; }
+  .tl-bar.lost { background: var(--surface) !important; border-color: var(--rule) !important; color: var(--dead); filter: saturate(0); opacity: .45; }
+  .tl-bar.inflight { border-color: var(--fail) !important; background: color-mix(in srgb, var(--fail) 18%, var(--surface)) !important; }
+  .tl-grid { position: absolute; inset: 0; pointer-events: none; }
+  .tl-gl { position: absolute; top: 0; bottom: 18px; width: 1px; background: var(--rule); }
+  .tl-gt { position: absolute; bottom: 0; font-family: var(--mono); font-size: 0.6rem; color: var(--ink-3); transform: translateX(-50%); }
+  .tl-kill { position: absolute; top: 0; bottom: 18px; width: 2px; background: var(--fail); pointer-events: none; display: none; }
+  .tl-kill::after {
+    content: 'SESSION DEATH'; position: absolute; top: -2px; left: 5px;
+    font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.1em; color: var(--fail); white-space: nowrap;
+  }
+  .tl-seam { position: absolute; top: 0; bottom: 18px; width: 2px; background: var(--pass); pointer-events: none; display: none; }
+  .tl-seam::after {
+    content: 'RESUME FROM LEDGER'; position: absolute; bottom: -2px; left: 5px;
+    font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.1em; color: var(--pass); white-space: nowrap;
+  }
+  .tl-legend { display: flex; flex-wrap: wrap; gap: 1rem; font-family: var(--mono); font-size: 0.64rem; color: var(--ink-3); margin-top: 0.4rem; }
+  .tl-legend span { display: flex; align-items: center; gap: 0.35rem; }
+  .swatch { width: 10px; height: 10px; border: 1px solid var(--rule-2); flex: none; }
+  .readout {
+    margin-top: 1.2rem; border-top: 1px solid var(--rule); padding-top: 1rem;
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem;
+  }
+  .readout-item .k { font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-3); }
+  .readout-item .v { font-family: var(--display); font-size: 1.5rem; line-height: 1.15; margin-top: 0.25rem; }
+  .readout-item .v.bad { color: var(--fail); }
+  .readout-item .v.good { color: var(--pass); }
+  .readout-note { grid-column: 1 / -1; font-size: 0.9rem; color: var(--ink-2); border-left: 2px solid var(--accent); padding-left: 0.8rem; }
+
+  /* ---------- matrix ---------- */
+  .matrix { display: grid; gap: 1px; background: var(--rule); border: 1px solid var(--rule); min-width: 620px; }
+  .matrix > div { background: var(--surface); padding: 0.55rem 0.6rem; font-family: var(--mono); font-size: 0.7rem; }
+  .matrix .mh { color: var(--ink-3); font-size: 0.62rem; letter-spacing: 0.1em; text-transform: uppercase; }
+  .matrix .cell { text-align: center; color: var(--ink-3); transition: background .15s, color .15s; }
+  .matrix .cell.yes { color: var(--accent); background: var(--accent-soft); }
+  .matrix .cell.dim { opacity: 0.25; }
+  .matrix .rl { color: var(--ink); }
+
+  /* ---------- scatter ---------- */
+  .scatter { width: 100%; height: auto; display: block; overflow: visible; }
+  .scatter text { font-family: var(--mono); font-size: 9px; fill: var(--ink-3); }
+  .scatter .axl { font-size: 8.5px; letter-spacing: 0.1em; }
+  .scatter .pt { cursor: default; }
+  .scatter .pt circle { transition: r .15s; }
+  .scatter .lbl { fill: var(--ink); font-size: 9.5px; }
+
+  /* ---------- bars ---------- */
+  .barlist { display: grid; gap: 0.5rem; }
+  .barrow { display: grid; grid-template-columns: 8ch 1fr 6ch; gap: 0.7rem; align-items: center; font-family: var(--mono); font-size: 0.72rem; }
+  .bartrack { background: var(--surface-2); height: 16px; position: relative; }
+  .barfill { position: absolute; inset: 0 auto 0 0; background: var(--accent); }
+  .barfill.muted { background: var(--dead); }
+  .barrow .rv { text-align: right; color: var(--ink-2); }
+
+  /* ---------- comparison ---------- */
+  .cmp-row { border-bottom: 1px solid var(--rule); padding: 0.9rem 0; display: grid; grid-template-columns: 12ch 1fr 1fr 9ch; gap: 1rem; align-items: start; font-size: 0.86rem; }
+  @media (max-width: 760px) { .cmp-row { grid-template-columns: 1fr; gap: 0.35rem; } .cmp-row .cmp-k { color: var(--accent); } }
+  .cmp-row:last-child { border-bottom: none; }
+  .cmp-k { font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-3); }
+  .cmp-lead { font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.08em; text-transform: uppercase; text-align: right; }
+  .cmp-lead.us { color: var(--accent); }
+  .cmp-lead.them { color: var(--ink-2); }
+  .cmp-lead.par { color: var(--pass); }
+  .cmp-row.hide { display: none; }
+
+  /* ---------- wart cards ---------- */
+  .warts { display: grid; gap: 1px; background: var(--rule); border: 1px solid var(--rule); }
+  .wart { background: var(--surface); padding: 1.1rem 1.2rem; display: grid; grid-template-columns: 3ch 1fr; gap: 1rem; }
+  .wart .wn { font-family: var(--mono); font-size: 0.7rem; color: var(--fail); padding-top: 0.15rem; }
+  .wart h4 { font-size: 0.98rem; text-transform: none; letter-spacing: 0; font-family: var(--display); }
+  .wart p { font-size: 0.88rem; color: var(--ink-2); margin: 0.4rem 0 0; }
+  .wart .ev { font-family: var(--mono); font-size: 0.66rem; color: var(--ink-3); margin-top: 0.5rem; }
+
+  /* ---------- unknowns ---------- */
+  .uu-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1px; background: var(--rule); border: 1px solid var(--rule); }
+  .uu {
+    background: var(--surface); padding: 1rem 1.05rem; cursor: pointer;
+    border: none; text-align: left; font: inherit; color: inherit;
+    display: block; transition: background .15s;
+  }
+  .uu:hover { background: var(--surface-2); }
+  .uu.hide { display: none; }
+  .uu-top { display: flex; justify-content: space-between; align-items: baseline; gap: 0.6rem; }
+  .uu-n { font-family: var(--mono); font-size: 0.66rem; color: var(--accent); }
+  .uu-t { font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-3); }
+  .uu h4 { font-size: 0.95rem; margin-top: 0.5rem; text-transform: none; letter-spacing: 0; line-height: 1.3; }
+  .uu p { font-size: 0.85rem; color: var(--ink-2); margin: 0.5rem 0 0; display: none; }
+  .uu.open p { display: block; }
+  .uu-more { font-family: var(--mono); font-size: 0.6rem; color: var(--ink-3); margin-top: 0.55rem; letter-spacing: 0.08em; }
+  .uu.open .uu-more { color: var(--accent); }
+
+  /* ---------- blueprint ---------- */
+  .steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1px; background: var(--rule); border: 1px solid var(--rule); margin-bottom: 1.5rem; }
+  .step { background: var(--surface); padding: 1rem; border: none; text-align: left; font: inherit; color: inherit; cursor: pointer; transition: background .15s; }
+  .step:hover { background: var(--surface-2); }
+  .step[aria-pressed="true"] { background: var(--accent-soft); }
+  .step .sv { font-family: var(--display); font-size: 1.5rem; color: var(--accent); }
+  .step .sn { font-family: var(--mono); font-size: 0.66rem; color: var(--ink-3); letter-spacing: 0.08em; margin-top: 0.3rem; }
+  .step .sd { font-size: 0.85rem; color: var(--ink-2); margin-top: 0.5rem; }
+
+  ol.build { counter-reset: b; list-style: none; padding: 0; margin: 0; }
+  ol.build li { display: grid; grid-template-columns: 3ch 1fr auto; gap: 1rem; padding: 0.85rem 0; border-bottom: 1px solid var(--rule); align-items: baseline; }
+  ol.build li::before { counter-increment: b; content: counter(b); font-family: var(--mono); font-size: 0.72rem; color: var(--accent); }
+  ol.build .bt { font-size: 0.92rem; }
+  ol.build .bd { font-size: 0.84rem; color: var(--ink-2); margin-top: 0.25rem; }
+  ol.build .be { font-family: var(--mono); font-size: 0.66rem; color: var(--ink-3); white-space: nowrap; }
+
+  .callout {
+    border-left: 2px solid var(--accent);
+    padding: 0.2rem 0 0.2rem 1rem;
+    margin: 1.6rem 0;
+    color: var(--ink-2);
+    font-size: 0.95rem;
+  }
+  .callout strong { color: var(--ink); }
+
+  footer { padding: 2.5rem 0 4rem; font-family: var(--mono); font-size: 0.7rem; color: var(--ink-3); line-height: 1.8; }
+
+  .theme-toggle { position: fixed; top: 1rem; right: 1rem; z-index: 10; }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; }
+  }
+</style>
+
+<button class="btn theme-toggle" id="themeBtn" type="button">Theme</button>
+
+<div class="wrap">
+
+  <header class="mast">
+    <div class="mast-tag"><span class="lamp"></span> Post-run teardown &middot; warts and all</div>
+    <h1>The<br>Night<br><span>Shift</span></h1>
+    <p class="dek">Seven benchmark projects, built and shipped by an autonomous software factory in one unattended
+      overnight run. This is the honest teardown &mdash; what the factory actually was, where the record lies,
+      and what it would take to build one that survives its own runtime.</p>
+    <div class="mast-meta">
+      <span>RUN 05:47:49&ndash;08:36:59Z</span>
+      <span>2H 49M UNATTENDED</span>
+      <span>7/7 CLOSED</span>
+      <span>0 HUMAN INPUTS</span>
+    </div>
+  </header>
+
+  <!-- ============ 1 ============ -->
+  <section>
+    <div class="sec-head">
+      <div class="sec-num">§1</div>
+      <div>
+        <h2>What ran</h2>
+        <p class="sec-sub">Seven prompts from a public benchmark that had previously caught a frontier model shipping
+          beautiful graphics with broken controls. Ordered cheapest-first by deliberate decision, not queue order.</p>
+      </div>
+    </div>
+
+    <div class="stats">
+      <div class="stat"><div class="stat-v accent">2:49</div><div class="stat-l">Hours unattended</div></div>
+      <div class="stat"><div class="stat-v">7/7</div><div class="stat-l">Prompts closed</div></div>
+      <div class="stat"><div class="stat-v">42</div><div class="stat-l">Unit tests written</div></div>
+      <div class="stat"><div class="stat-v">3</div><div class="stat-l">Verifier subagents</div></div>
+      <div class="stat"><div class="stat-v">4</div><div class="stat-l">Live deployments</div></div>
+      <div class="stat"><div class="stat-v">1</div><div class="stat-l">Session (no restarts)</div></div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head"><span>Production log &middot; run order</span><span>7 &rarr; 8 &rarr; 3 &rarr; 4 &rarr; 9 &rarr; 5 &rarr; 6</span></div>
+      <div class="panel-body scroll-x">
+        <table id="runTable">
+          <thead>
+            <tr><th>#</th><th>Project</th><th>Class</th><th>Time</th><th>Tests</th><th>Gate outcome</th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="col">
+      <p>Duration tracked build size. <strong>Iteration count tracked subjectivity</strong> &mdash; the watch page took
+        nine visual passes and still closed at 12/14; the physics-heavy shooter took one test-fix cycle and closed
+        at 18/18. That split turns out to be the whole story, and §5 makes it a picture.</p>
+    </div>
+  </section>
+
+  <!-- ============ 2 ============ -->
+  <section>
+    <div class="sec-head">
+      <div class="sec-num">§2</div>
+      <div>
+        <h2>It was a protocol, not a program</h2>
+        <p class="sec-sub">The single most important structural fact, and the easiest to misremember later.</p>
+      </div>
+    </div>
+
+    <div class="col">
+      <p><strong>There is no orchestrator.</strong> No script, no daemon, no queue runner, no state machine in code.
+        The transcript confirms no workflow engine was ever invoked and no scheduler ran. The &ldquo;state file&rdquo;
+        is a markdown document that the assistant rewrote by hand at each prompt boundary.</p>
+      <p>The factory consisted of exactly three things: a <strong>written protocol</strong> (the staged pipeline),
+        a <strong>standing authorization</strong> granted up front in one batch, and <strong>the assistant as
+        runtime</strong> &mdash; simultaneously the scheduler, the queue, the state store, the builder, most of the
+        verifier, and the isolation boundary.</p>
+      <div class="callout">
+        It worked. It also cannot run twice. <strong>The runtime was a conversation.</strong> Kill the session
+        mid-run and the factory is a folder of markdown with nobody reading it. Every recommendation in §9 exists
+        to fix exactly this.
+      </div>
+      <h3>What actually carried the run</h3>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head"><span>Tool substrate &middot; calls logged</span><span>no workflow engine &middot; no scheduler</span></div>
+      <div class="panel-body">
+        <div class="barlist" id="substrate"></div>
+      </div>
+    </div>
+
+    <div class="col">
+      <p>Notably absent: any CI runner, any cloud agent platform, and any workflow orchestration tool. The hard gates
+        &mdash; WebGL rendering, frame rates on a local GPU, headed-browser QA &mdash; are precisely the things a CI
+        runner cannot do, which is why the factory was designed to run on a desk in the first place.</p>
+    </div>
+  </section>
+
+  <!-- ============ 3 ============ -->
+  <section>
+    <div class="sec-head">
+      <div class="sec-num">§3</div>
+      <div>
+        <h2>Four loops, not three</h2>
+        <p class="sec-sub">The working mental model during planning had three. The evidence shows four &mdash; and the
+          fourth is the one that matters most for anything that runs longer than a night. Click a ring.</p>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head"><span>Loop anatomy</span><span id="loopHint">Select a ring to inspect</span></div>
+      <div class="panel-body">
+        <div class="loops">
+          <svg class="loop-svg" viewBox="0 0 320 300" role="img" aria-label="Four nested loops: meta, outer, inner, repair">
+            <g id="ringMeta" class="loop-ring" tabindex="0" role="button" aria-label="Meta loop">
+              <rect x="6" y="6" width="308" height="288" fill="none" stroke="var(--rule-2)" stroke-width="1"></rect>
+              <text x="16" y="24" fill="var(--ink-3)">META</text>
+            </g>
+            <g id="ringOuter" class="loop-ring" tabindex="0" role="button" aria-label="Outer loop">
+              <rect x="30" y="36" width="260" height="234" fill="none" stroke="var(--rule-2)" stroke-width="1"></rect>
+              <text x="40" y="54" fill="var(--ink-3)">OUTER</text>
+            </g>
+            <g id="ringInner" class="loop-ring" tabindex="0" role="button" aria-label="Inner loop">
+              <rect x="54" y="66" width="212" height="180" fill="none" stroke="var(--rule-2)" stroke-width="1"></rect>
+              <text x="64" y="84" fill="var(--ink-3)">INNER</text>
+            </g>
+            <g id="ringRepair" class="loop-ring" tabindex="0" role="button" aria-label="Repair loop">
+              <rect x="78" y="96" width="164" height="126" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.5"></rect>
+              <text x="88" y="114" fill="var(--accent)">REPAIR</text>
+              <text x="88" y="150" fill="var(--ink-2)" style="font-size:8px">BUILD &rarr; VERIFY</text>
+              <text x="88" y="164" fill="var(--ink-2)" style="font-size:8px">&rarr; FIX &rarr; RE-VERIFY</text>
+              <text x="88" y="192" fill="var(--ink-3)" style="font-size:8px">WHERE THE VALUE WAS</text>
+            </g>
+          </svg>
+          <div class="loop-detail" id="loopDetail"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 4 ============ -->
+  <section>
+    <div class="sec-head">
+      <div class="sec-num">§4</div>
+      <div>
+        <h2>The night shift</h2>
+        <p class="sec-sub">Real timestamps from the session transcript. Verifier subagents ran <em>concurrently</em>
+          with the builder &mdash; you can see the overlap. Then try killing the session.</p>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head">
+        <span>Chart recorder &middot; 169 min</span>
+        <div class="ctrls">
+          <button class="btn danger" id="killBtn" type="button">Kill session</button>
+          <button class="btn" id="hbBtn" type="button" aria-pressed="false">Heartbeat resume: off</button>
+          <button class="btn" id="resetBtn" type="button">Reset</button>
+        </div>
+      </div>
+      <div class="panel-body">
+        <div class="tl-track" id="tlTrack">
+          <div class="tl-grid" id="tlGrid"></div>
+          <div class="tl-rows" id="tlRows"></div>
+          <div class="tl-kill" id="tlKill"></div>
+          <div class="tl-seam" id="tlSeam"></div>
+        </div>
+        <div class="tl-legend">
+          <span><i class="swatch" style="background:color-mix(in srgb, var(--accent) 22%, var(--surface))"></i> build lane</span>
+          <span><i class="swatch" style="background:color-mix(in srgb, var(--pass) 22%, var(--surface))"></i> verifier subagent (background)</span>
+          <span><i class="swatch" style="background:var(--surface)"></i> lost</span>
+          <span>click the track to place the kill point</span>
+        </div>
+
+        <div class="readout" id="readout"></div>
+      </div>
+    </div>
+
+    <div class="col">
+      <p>The default state is what actually happened: one uninterrupted session, no context compaction during the run,
+        everything held in a single window. That was <strong>luck of scale, not design</strong>. A run of any real
+        length hits that wall mid-build, guaranteed.</p>
+      <p>Turn the heartbeat on and kill it again. The difference is the entire argument for §9: with per-stage ledger
+        events on disk, a fresh session reads the board, finds the in-flight lane, and resumes from the last recorded
+        stage. The seam shows in the record; it does not show in the deliverable.</p>
+    </div>
+  </section>
+
+  <!-- ============ 5 ============ -->
+  <section>
+    <div class="sec-head">
+      <div class="sec-num">§5</div>
+      <div>
+        <h2>How things got verified</h2>
+        <p class="sec-sub">The most reusable result of the run: verification modality is a function of deliverable
+          class. Unit tests exist only where a deterministic core exists.</p>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head">
+        <span>Verification matrix</span>
+        <div class="ctrls" id="modeFilter"></div>
+      </div>
+      <div class="panel-body scroll-x">
+        <div class="matrix" id="matrix"></div>
+      </div>
+    </div>
+
+    <div class="col">
+      <h3>The autonomy ceiling</h3>
+      <p>Plot each project by how mechanical its gate could be made, against how many repair iterations it actually
+        took. The relationship is not subtle.</p>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head"><span>Gate objectivity vs. repair iterations</span><span>n = 7</span></div>
+      <div class="panel-body scroll-x">
+        <svg class="scatter" id="scatter" viewBox="0 0 640 300" role="img"
+             aria-label="Scatter plot: mechanical gates required few iterations, judged gates required many"></svg>
+      </div>
+    </div>
+
+    <div class="col">
+      <div class="callout">
+        <strong>A factory is exactly as autonomous as its gates are mechanical.</strong> The three projects with a
+        deterministic core could be fully automated tomorrow with nothing lost. The judged ones needed rubrics,
+        a second mind, and iteration &mdash; and the hardest still closed below full marks. Subjectivity was never
+        eliminated. It was <em>bounded</em>, by converting taste into a scored rubric with a threshold. That
+        bounding is the best available move, and it has a ceiling.
+      </div>
+      <p>The trick that bought the most: <strong>self-supplied ground truth</strong>. One project referenced an input
+        file that did not exist. Synthesizing that input with known properties turned &ldquo;does the output resemble
+        the source?&rdquo; into &ldquo;14 of 14 notes, onsets within 120&nbsp;ms.&rdquo; Wherever a fixture is
+        referenced but absent, generating it buys a mechanical gate for free.</p>
+    </div>
+  </section>
+
+  <!-- ============ 6 ============ -->
+  <section>
+    <div class="sec-head">
+      <div class="sec-num">§6</div>
+      <div>
+        <h2>Against a real factory</h2>
+        <p class="sec-sub">Benchmarked against a public reference implementation of a cloud software factory &mdash;
+          CI-triggered agents, stages as skills, issue labels as the state machine, machine-readable review output,
+          and a daily self-improvement workflow.</p>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head">
+        <span>Dimension by dimension</span>
+        <div class="ctrls" id="cmpFilter"></div>
+      </div>
+      <div class="panel-body">
+        <div class="cmp-row" style="border-bottom-color:var(--rule-2)">
+          <div class="cmp-k">Dimension</div>
+          <div class="cmp-k">This run</div>
+          <div class="cmp-k">Reference factory</div>
+          <div class="cmp-k cmp-lead">Leads</div>
+        </div>
+        <div id="cmpRows"></div>
+      </div>
+    </div>
+
+    <div class="col">
+      <p><strong>The surprise:</strong> the reference factory has two mandatory human gates per task &mdash; approve
+        the spec, then review and merge. It is a supervised assembly line. This run had zero. On the axis everyone
+        assumes is hard, the night shift is ahead.</p>
+      <p>The gap is entirely elsewhere: <strong>the reference factory survives any particular mind being absent.</strong>
+        That is what makes a factory a factory, and it is the one thing the night shift never had. These are different
+        points on the same map, not a ranking &mdash; one solves supervised, code-only, indefinitely-running flow;
+        the other solved unsupervised, mixed-media, single-burst flow on a runtime made of attention.</p>
+      <div class="callout">
+        Distance to close: <strong>days of plumbing, not weeks of invention.</strong> The stage definitions are 80%
+        written already, sitting in seven execution contracts. What is missing is durable state, machine-readable
+        verdicts, and a heartbeat.
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 7 ============ -->
+  <section>
+    <div class="sec-head">
+      <div class="sec-num">§7</div>
+      <div>
+        <h2>Warts</h2>
+        <p class="sec-sub">Where the run's own record overstates, drifts, or quietly reinterprets its governing
+          document. This section is first-class on purpose &mdash; it is the part with the shortest half-life if
+          nobody writes it down.</p>
+      </div>
+    </div>
+
+    <div class="warts" id="warts"></div>
+
+    <div class="col" style="margin-top:1.5rem">
+      <p>Worth stating plainly: the last of those is the reason this teardown had to be assembled by two mining agents
+        working over an 18&nbsp;MB transcript, git logs, and the ledgers &mdash; rather than written from memory.
+        <strong>The runtime that ran the factory could not accurately recall the factory.</strong></p>
+    </div>
+  </section>
+
+  <!-- ============ 8 ============ -->
+  <section>
+    <div class="sec-head">
+      <div class="sec-num">§8</div>
+      <div>
+        <h2>What only running taught us</h2>
+        <p class="sec-sub">Sixteen things invisible until the factory actually ran. This is the section that
+          justifies having run it. Click any card.</p>
+      </div>
+    </div>
+
+    <div class="ctrls" id="uuFilter" style="margin-bottom:1rem"></div>
+    <div class="uu-grid" id="uuGrid"></div>
+
+    <div class="col" style="margin-top:2rem">
+      <h3>The record collapsed exactly when it got interesting</h3>
+      <p>The supervised precursor project produced thirteen ledger events. Under autonomous speed, the record decayed
+        monotonically in run order &mdash; and the projects with the richest engineering stories have the thinnest
+        record. Nine visual iterations survive as a single table inside one closure document; git shows two commits.</p>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head"><span>Ledger events per project &middot; run order</span><span>throughput vs. record</span></div>
+      <div class="panel-body">
+        <div class="barlist" id="ledgerBars"></div>
+      </div>
+    </div>
+
+    <div class="col">
+      <p>Documentation degrades under throughput unless the pipeline <em>forces</em> it, because the runtime always has
+        something more urgent than writing history. In a factory the record is a load-bearing component &mdash; it is
+        the input to the meta loop &mdash; not exhaust.</p>
+    </div>
+  </section>
+
+  <!-- ============ 9 ============ -->
+  <section>
+    <div class="sec-head">
+      <div class="sec-num">§9</div>
+      <div>
+        <h2>The next factory</h2>
+        <p class="sec-sub">Target: survives session death, runs for days, keeps its meta loop on disk, and preserves
+          everything that worked.</p>
+      </div>
+    </div>
+
+    <div class="col">
+      <h3>Substrate</h3>
+      <p>Pure cloud is disqualified by this workload &mdash; the hard gates need a real GPU and a headed browser.
+        Pure local repeats every fragility above. The answer is <strong>hybrid</strong>: local sessions become
+        <em>workers</em> rather than <em>the factory</em>; durable queue and state live remotely as issues and labels;
+        a scheduled heartbeat wakes a fresh worker that reads the board and resumes in-flight work from the last
+        recorded stage. One stage of loss, maximum.</p>
+      <h3>Build order</h3>
+    </div>
+
+    <ol class="build" id="buildList"></ol>
+
+    <div class="col">
+      <div class="callout">
+        Note the elegance of item&nbsp;5: making the ledger the <em>resume mechanism</em> makes its collapse
+        structurally impossible. The record stops being discipline and starts being infrastructure.
+      </div>
+      <h3>What not to build</h3>
+      <p>No custom orchestrator daemon &mdash; the heartbeat and the board <em>are</em> the orchestrator. No parallel
+        lanes in v1; serial worked, and parallelism multiplies contention while making resume combinatorial. And no
+        attempt to mechanize taste beyond rubric, verifier, and reference board &mdash; budget a fixed number of
+        repair passes per judged gate, then escalate. A taste gate that cannot converge is information, not a bug.</p>
+      <h3>Milestones</h3>
+    </div>
+
+    <div class="steps" id="steps"></div>
+    <div class="col" id="stepDetail"></div>
+  </section>
+
+  <footer>
+    <div>Compiled from the session transcript, git history, execution contracts and journey ledgers &mdash; not from memory.</div>
+    <div>Figures are live data: timeline from transcript timestamps, iteration counts and gate results from per-project closure records.</div>
+    <div style="margin-top:0.8rem">Outstanding: one batched foreground session for native-input checks &middot; two text projects still unversioned &middot; two cosmetic rubric points open.</div>
+  </footer>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var T0 = 0, TOTAL = 169.17;
+
+  var PROMPTS = [
+    { n:7, name:"Biography",        cls:"research-writing", s:0,      e:3.48,   tests:0,  iters:2, ledger:4,
+      gate:"0 fabrications", gateType:"pass", verifier:"agent", mech:0.30,
+      note:"Adversarial fact-refuter re-fetched every live source. Caught two wording defects the builder read past." },
+    { n:8, name:"Trailer",          cls:"writing-plan",     s:3.48,   e:18.75,  tests:0,  iters:3, ledger:3,
+      gate:"continuity FAIL &rarr; repaired", gateType:"fail", verifier:"agent", mech:0.35,
+      note:"Verifier failed the first draft's continuity before a single frame rendered. Repair cost nothing but time." },
+    { n:3, name:"MP3 &rarr; MIDI",  cls:"deployable-app",   s:18.75,  e:29.93,  tests:9,  iters:1, ledger:2,
+      gate:"14/14 notes exact", gateType:"pass", verifier:"mechanical", mech:0.95,
+      note:"Synthesized its own input file with a known note table, converting a subjective gate into arithmetic." },
+    { n:4, name:"Fighting game",    cls:"deployable-app",   s:29.93,  e:42.68,  tests:15, iters:2, ledger:1,
+      gate:"15/15 &middot; contested 2&ndash;1", gateType:"pass", verifier:"mechanical", mech:0.85,
+      note:"Two defects found were in the test helpers, not the engine. The harness is code with its own defect rate." },
+    { n:9, name:"Motion explainer", cls:"rendered-video",   s:42.68,  e:68.18,  tests:0,  iters:3, ledger:1,
+      gate:"lint clean &middot; frames caught more", gateType:"pass", verifier:"frames", mech:0.55,
+      note:"A linter-approved selector bug rendered copy at the wrong size. Only extracted frames revealed it." },
+    { n:5, name:"Watch page",       cls:"deployable-app",   s:68.18,  e:108.15, tests:0,  iters:9, ledger:1,
+      gate:"9/14 FAIL &rarr; 12/14 PASS", gateType:"defer", verifier:"agent", mech:0.15,
+      note:"Eight self-driven passes before the gate, then an independent scorer failed it anyway. One repair, re-scored by the same verifier." },
+    { n:6, name:"Shooter",          cls:"deployable-app",   s:108.15, e:169.17, tests:18, iters:2, ledger:1,
+      gate:"18/18 incl. controls suite", gateType:"pass", verifier:"mechanical", mech:0.90,
+      note:"A dedicated camera-relative movement suite targeting the exact failure class the benchmark was built to catch." }
+  ];
+
+  var VERIFIERS = [
+    { p:7, s:3.12,   e:5.20,   label:"fact refuter" },
+    { p:8, s:7.27,   e:8.30,   label:"continuity" },
+    { p:5, s:100.98, e:107.20, label:"visual rubric" }
+  ];
+
+  var SUBSTRATE = [
+    { k:"Shell",      v:96, note:"serve, git, deploy, tests, ffmpeg" },
+    { k:"Browser QA", v:84, note:"evaluate, navigate, screenshot, console" },
+    { k:"Read",       v:90, note:"screenshots and files" },
+    { k:"Write/Edit", v:61, note:"source and ledgers" },
+    { k:"Generation", v:40, note:"video and image jobs" },
+    { k:"Fact-check", v:33, note:"mostly inside one verifier" },
+    { k:"Subagents",  v:3,  note:"the three judged gates" },
+    { k:"Workflow",   v:0,  note:"never invoked" }
+  ];
+
+  var LOOPS = {
+    ringRepair: {
+      t:"Repair loop", lead:"Build &rarr; verify &rarr; fix &rarr; re-verify. Innermost, and where every quality gain actually came from.",
+      pts:[
+        "<strong>Mechanical form:</strong> failing test &rarr; fix &rarr; rerun. Three failures shown in full, epsilon and aim corrected, 18/18. Tight, fast, boring &mdash; as it should be.",
+        "<strong>Judged form:</strong> adversarial verdict &rarr; repair &rarr; re-verify <em>with the same verifier</em>. A fresh one would re-litigate categories that already passed.",
+        "<strong>Perceptual form:</strong> extract frames from the rendered output and judge them against the plan. Caught two defects every upstream check had passed."
+      ],
+      fate:"Survived: encoded in test suites and rubrics on disk."
+    },
+    ringInner: {
+      t:"Inner loop", lead:"Per project: triage &rarr; harden into a contract &rarr; freeze a reference &rarr; build &rarr; verify in layers &rarr; deploy &rarr; ledger &rarr; retro.",
+      pts:[
+        "The <strong>hardening</strong> stage rewrites the original prompt into explicit gates and records every substitution. All seven contracts held through their builds.",
+        "The <strong>reference board</strong> is frozen before any code is written, so visual work iterates toward a fixed target instead of wandering.",
+        "<strong>Layered verification:</strong> unit tests on the pure core, then scripted browser QA against instrumented hooks, then deploy, then a regression pass against the live URL."
+      ],
+      fate:"Survived: seven execution contracts, reusable as stage definitions."
+    },
+    ringOuter: {
+      t:"Outer loop", lead:"Across the queue, carrying the authorization, the budget, and the accumulated know-how between projects.",
+      pts:[
+        "The queue was <strong>a document</strong>, rewritten by hand at each boundary. Transitions were prose milestones, not tool calls.",
+        "Ordering was a decision, not FIFO: cheap text work first to prove the protocol at low stakes, heaviest and most failure-prone last.",
+        "The loop <strong>pipelined itself, unprompted</strong> &mdash; a tool install started while the previous project's verifier was still scoring; a deploy launched in parallel with its own verification; rate-limit cooldowns were filled with ledger writing."
+      ],
+      fate:"Partly survived: artifacts on disk, but the queue state and the improvisation did not."
+    },
+    ringMeta: {
+      t:"Meta loop", lead:"The fourth loop, discovered rather than planned &mdash; and the fragile one. Lessons from each project reshaping the next.",
+      pts:[
+        "Project 7's verifier caught the benchmark's own false claim &rarr; the run-wide rule that task specifications are unverified claims &rarr; changed how project 8 handled research.",
+        "Project 8's continuity failure &rarr; every generated prompt must restate its full context &rarr; became the standard for all later generation work.",
+        "Project 3's false-alarm race &rarr; read state in the same call as the action that changes it &rarr; project 6's browser QA was phase-aware from the start.",
+        "Project 4's test-helper bugs &rarr; project 6's helpers computed their geometry instead of hardcoding it."
+      ],
+      fate:"LOST. It ran in the context window. The reference factory persists this as a daily workflow; here it lived in neurons, and the neurons were wiped."
+    }
+  };
+
+  var MODES = [
+    { k:"unit",   label:"Unit tests" },
+    { k:"browser",label:"Browser QA" },
+    { k:"rubric", label:"Scored rubric" },
+    { k:"audit",  label:"Claim audit" },
+    { k:"lint",   label:"Structure lint" },
+    { k:"frames", label:"Frame extraction" },
+    { k:"deploy", label:"Deployed regression" }
+  ];
+  var MATRIX = {
+    7:["audit"],
+    8:["lint","frames","audit"],
+    3:["unit","browser","deploy"],
+    4:["unit","browser","deploy"],
+    9:["lint","frames"],
+    5:["rubric","browser","deploy"],
+    6:["unit","browser","deploy"]
+  };
+
+  var CMP = [
+    { k:"Orchestration", us:"One session as runtime. Dies with the session.", them:"CI triggers plus a cloud agent platform. Survives anyone's absence.", lead:"them", tag:"THE GAP" },
+    { k:"Queue & state", us:"A prompt list in a markdown file, read by the runtime.", them:"Issues and labels &mdash; durable, visible, resumable.", lead:"them", tag:"durability" },
+    { k:"Spec as contract", us:"An execution contract per project, authorized in batch.", them:"A product and tech spec per issue, human-approved.", lead:"par", tag:"CONVERGED" },
+    { k:"Isolation", us:"Own directory, own repo, own deployment target per project.", them:"Branch and pull request per change.", lead:"par", tag:"parity" },
+    { k:"Quality gates", us:"Structured markdown verdicts, read by the assistant.", them:"Machine-readable review output consumed by CI.", lead:"them", tag:"machine-checkable" },
+    { k:"Human gates", us:"Zero. Replaced by one up-front batched authorization.", them:"Two per task &mdash; approve spec, then review and merge.", lead:"us", tag:"MORE AUTONOMOUS" },
+    { k:"Verification depth", us:"Five modalities incl. browser QA, visual rubric, claim audit, frame extraction.", them:"Diff-against-spec plus code review. Code only.", lead:"us", tag:"mixed media" },
+    { k:"Meta loop", us:"Ran in the context window. Evaporated.", them:"A daily workflow, persisted and versioned.", lead:"them", tag:"COMPOUNDS" },
+    { k:"Retry & parallelism", us:"Improvised per decision: backoff, cooldown-filling, opportunistic pipelining.", them:"Platform-native retries and parallel workflows.", lead:"par", tag:"smart vs repeatable" },
+    { k:"Survives death", us:"No. Per-project artifacts survive; in-flight work does not.", them:"Yes. State lives in issues and branches.", lead:"them", tag:"DEFINING" }
+  ];
+
+  var WARTS = [
+    { t:"The verifier-separation claim was overstated",
+      d:"The governing charter mandates a verifier separate from the builder for every gate. In fact exactly three verifier subagents were ever spawned. The other four projects used in-context mechanical gates. The run's own summary line conflates the two.",
+      ev:"3 of 7 &mdash; and the looser reading is arguably the correct design: judged gates need a second mind, mechanical gates need a good test suite." },
+    { t:"Two closure headers say &ldquo;all gates pass&rdquo; when one gate was deferred",
+      d:"Both interactive projects list a native-input check as a first-class gate. That check was deferred to a batched foreground session that has still not happened. The fine print records this honestly; the headline does not.",
+      ev:"Deferred is not dropped &mdash; but autonomous runs grade their own homework generously in the summary line." },
+    { t:"Machine-readable verdicts were planned and never built",
+      d:"The feasibility document specified a structured verdict file per gate. Under autonomous execution it silently decayed to prose tables, because the only consumer of a verdict was an assistant, which reads prose fine.",
+      ev:"Structure survives only when something mechanical breaks in its absence." },
+    { t:"The record collapsed as the run sped up",
+      d:"Ledger events per project, in run order: four, three, two, one, one, one, one. The supervised precursor produced thirteen. The projects with the most interesting engineering have the thinnest record.",
+      ev:"Nine visual iterations survive as one table. Git shows two commits." },
+    { t:"The two most loss-vulnerable deliverables got no version control",
+      d:"The biography and the trailer plan &mdash; pure text, trivially versionable &mdash; are the only two projects with no repository at all. Everything that deploys was committed and pushed.",
+      ev:"The factory versioned what its habits versioned, not what mattered most to preserve." },
+    { t:"A tool was authorized, installed, and never worked",
+      d:"A 3D package was approved for asset generation. One install route returned a stale-manifest error; the route that succeeded produced a launcher that silently swallows headless flags. The project fell back to procedural generation.",
+      ev:"Recorded honestly in the project ledger; the top-level state file's &ldquo;installed&rdquo; line is true but misleading without the caveat." },
+    { t:"The runtime could not recall its own run",
+      d:"An earlier account of this run asserted that context had been compacted twice during it. The transcript shows zero compaction events while the factory was running &mdash; the compactions came afterward, in the documentation sessions.",
+      ev:"Which is why this teardown was rebuilt from transcript, git and ledgers rather than written from memory." }
+  ];
+
+  var UU = [
+    { t:"Gates", h:"A factory is exactly as autonomous as its gates are mechanical",
+      d:"Three projects with deterministic cores could be fully automated tomorrow. The judged ones needed rubrics, second minds, and iteration &mdash; and the hardest still closed below full marks. Subjectivity was bounded, not eliminated." },
+    { t:"Record", h:"The record collapses exactly when it gets interesting",
+      d:"Thirteen ledger events under supervision; one per project at full speed. The runtime always has something more urgent than writing history, so the pipeline must force it." },
+    { t:"Gates", h:"Verifier separation is a per-gate decision, not a policy",
+      d:"Agents for judged gates; suites for mechanical ones. Discovered rather than designed &mdash; and it means the run quietly reinterpreted its own governing document under pressure. Benignly here. Not guaranteed benign." },
+    { t:"Record", h:"Structure decays to prose unless a machine consumes it",
+      d:"The planned verdict file never appeared &mdash; not by decision but by drift. Put a parser on the consuming end of every verdict first, or the schema decays again." },
+    { t:"Harness", h:"The test harness is code with its own defect rate",
+      d:"Three defects in the run were in test and QA code, not products: helpers that walked fighters past each other, held keys that never re-triggered, an aim calculation that missed over a target's head." },
+    { t:"Harness", h:"Harness races masquerade as product bugs",
+      d:"A reported &ldquo;playback stopped&rdquo; was nine seconds of audio finishing during inter-tool latency. Rule extracted: read state in the same call as the action that changes it." },
+    { t:"Services", h:"Every external service failed exactly once, each in a novel way",
+      d:"Time-windowed rate limits rather than concurrency limits. A generation service silently substituting its own house style for a literal prompt. A stale package manifest. A launcher that swallows headless flags. None predictable from documentation." },
+    { t:"Inputs", h:"The inputs lie",
+      d:"The benchmark prompt itself asserted a false fact about its own subject. The builder propagated it; only an adversarial re-fetch of live sources caught it. Task specifications are unverified claims &mdash; especially the parts that read as background truth." },
+    { t:"Inputs", h:"Stateless executors need self-contained prompts",
+      d:"&ldquo;Same interior as the previous shot&rdquo; is a null pointer to a video model. Generalizes to any stage whose executor has no memory of prior stages &mdash; which, in a factory of fresh subagents, is every stage." },
+    { t:"Gates", h:"Perceptual verification catches what symbolic verification passes",
+      d:"Twice: a linter-approved selector bug visible only in extracted frames, and a duplicate title card. And in reverse for code &mdash; a screenshot caught a solid cylinder occluding a watch dial that no amount of code reading would flag." },
+    { t:"Gates", h:"Mechanical ground truth is buyable",
+      d:"Synthesize the missing input. Write control-correctness suites targeting the known failure class. Instrument the app with read-only QA hooks. Each converts a judgment call into an assertion." },
+    { t:"Runtime", h:"A single-threaded runtime discovers concurrency under pressure",
+      d:"Optimistic deploy in parallel with verification; installs overlapped with a previous project's scoring; cooldowns filled with ledger writes. All unplanned, locally clever, and unreproducible because it lived in one mind's judgment." },
+    { t:"Record", h:"Closure language inflates",
+      d:"Two projects report all gates passing while a native-input gate sits deferred. The itemized record is honest; the headline is not. Machine-checkable closure fixes this." },
+    { t:"Record", h:"The most loss-vulnerable deliverables got the least protection",
+      d:"The two pure-text projects are the only ones with no version control. The factory protected what its habits protected &mdash; things that deploy &mdash; not what was most fragile." },
+    { t:"Runtime", h:"Context is a consumable nobody budgeted",
+      d:"The run fit in one window by luck of scale. The meta loop, the tool know-how and the cross-project lessons all lived there, and post-run compaction destroyed them. A long run hits this wall mid-build, guaranteed." },
+    { t:"Governance", h:"The batched authorization was the actual invention",
+      d:"Removing the human did not require better agents. It required moving every approval to before the run, batched, with an explicit still-requires-asking list and pre-sanctioned fallbacks. It did more work than any technical component." }
+  ];
+
+  var BUILD = [
+    { t:"Verdict schema and its consumer", d:"A structured verdict per gate, plus a checker that refuses to close any task whose gate list has a non-passing entry without a stated reason. Build the consumer first or the schema decays again.", e:"~0.5 day" },
+    { t:"Durable queue and state", d:"Tasks as issues; labels as the state machine from queued through hardened, building, verified, closed or blocked. Kill-survivability for the outer loop.", e:"~1 day" },
+    { t:"Stages as skills", d:"One definition per stage, lifted from the seven execution contracts and the verification taxonomy. The verify stages encode the per-class modality table. Mostly transcription.", e:"~2-3 days" },
+    { t:"Persistent meta loop", d:"The retro stage appends to versioned lesson and rubric files that the triage and verify stages must read. Each lesson gets an identifier; contracts cite the ones they apply. The novel piece.", e:"~1 day" },
+    { t:"Heartbeat and resume", d:"A scheduled wake reads the board, finds in-flight work, and resumes from the last ledger event &mdash; which requires per-stage events, making the record load-bearing by construction.", e:"~1-2 days" },
+    { t:"Budget enforcement", d:"Spend checked against a per-run cap before every generation call; exceeding it escalates rather than proceeds. The run tracked spend honestly, but nothing enforced it.", e:"~0.5 day" }
+  ];
+
+  var STEPS = [
+    { v:"v0.1", n:"Replay", d:"Re-run one already-closed project through the new substrate. A known-good task, so any divergence is a factory bug rather than a task bug.", exit:"Exit: closes with an all-passing verdict file and a per-stage ledger." },
+    { v:"v0.5", n:"Survive death", d:"A new small task, run unattended, with a deliberate mid-build session kill. The heartbeat must resume and close it.", exit:"Exit: the seam is visible in the record and invisible in the deliverable." },
+    { v:"v1", n:"The compounding week", d:"Three to five tasks over multiple days, at least one escalation resolved asynchronously, and the meta loop demonstrably firing.", exit:"Exit: a lesson written by one task's retro provably changes the next task's contract. Point to the diff." }
+  ];
+
+  function el(tag, cls, html) {
+    var e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (html !== undefined) e.innerHTML = html;
+    return e;
+  }
+  function pct(x) { return (x / TOTAL * 100); }
+
+  /* ---------- theme ---------- */
+  var tb = document.getElementById("themeBtn");
+  tb.addEventListener("click", function () {
+    var cur = document.documentElement.getAttribute("data-theme");
+    if (!cur) {
+      cur = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    }
+    document.documentElement.setAttribute("data-theme", cur === "dark" ? "light" : "dark");
+  });
+
+  /* ---------- run table ---------- */
+  (function () {
+    var tb2 = document.querySelector("#runTable tbody");
+    PROMPTS.forEach(function (p) {
+      var tr = el("tr");
+      tr.innerHTML =
+        '<td class="num">' + p.n + '</td>' +
+        '<td>' + p.name + '</td>' +
+        '<td class="num" style="color:var(--ink-3)">' + p.cls + '</td>' +
+        '<td class="num">' + Math.round(p.e - p.s) + ' min</td>' +
+        '<td class="num">' + (p.tests || '&mdash;') + '</td>' +
+        '<td><span class="chip ' + p.gateType + '">' + p.gate + '</span></td>';
+      tb2.appendChild(tr);
+    });
+  })();
+
+  /* ---------- substrate bars ---------- */
+  (function () {
+    var host = document.getElementById("substrate");
+    var max = 96;
+    SUBSTRATE.forEach(function (s) {
+      var row = el("div", "barrow");
+      row.innerHTML =
+        '<span>' + s.k + '</span>' +
+        '<span class="bartrack"><i class="barfill' + (s.v === 0 ? ' muted' : '') + '" style="width:' +
+        Math.max(s.v / max * 100, s.v === 0 ? 0.6 : 2) + '%"></i></span>' +
+        '<span class="rv">' + s.v + '</span>';
+      row.title = s.note;
+      host.appendChild(row);
+    });
+  })();
+
+  /* ---------- loops ---------- */
+  (function () {
+    var detail = document.getElementById("loopDetail");
+    var hint = document.getElementById("loopHint");
+    var ids = ["ringRepair", "ringInner", "ringOuter", "ringMeta"];
+
+    function show(id) {
+      var L = LOOPS[id];
+      var lost = /LOST/.test(L.fate);
+      detail.innerHTML =
+        '<h4>' + L.t + '</h4>' +
+        '<p class="lead">' + L.lead + '</p>' +
+        '<ul>' + L.pts.map(function (x) { return '<li>' + x + '</li>'; }).join('') + '</ul>' +
+        '<div class="loop-fate" style="' + (lost ? 'color:var(--fail)' : '') + '">' + L.fate + '</div>';
+      hint.textContent = L.t.toUpperCase();
+      ids.forEach(function (o) {
+        var r = document.querySelector("#" + o + " rect");
+        var on = o === id;
+        r.setAttribute("stroke", on ? "var(--accent)" : "var(--rule-2)");
+        r.setAttribute("stroke-width", on ? "1.5" : "1");
+        r.setAttribute("fill", on ? "var(--accent-soft)" : "none");
+        document.querySelector("#" + o + " text").setAttribute("fill", on ? "var(--accent)" : "var(--ink-3)");
+      });
+    }
+    ids.forEach(function (id) {
+      var g = document.getElementById(id);
+      g.addEventListener("click", function () { show(id); });
+      g.addEventListener("keydown", function (ev) {
+        if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); show(id); }
+      });
+    });
+    show("ringRepair");
+  })();
+
+  /* ---------- timeline ---------- */
+  (function () {
+    var track = document.getElementById("tlTrack");
+    var rows = document.getElementById("tlRows");
+    var grid = document.getElementById("tlGrid");
+    var killEl = document.getElementById("tlKill");
+    var seamEl = document.getElementById("tlSeam");
+    var readout = document.getElementById("readout");
+    var killAt = null, heartbeat = false;
+
+    for (var m = 0; m <= 160; m += 20) {
+      var gl = el("div", "tl-gl"); gl.style.left = pct(m) + "%"; grid.appendChild(gl);
+      var gt = el("div", "tl-gt"); gt.style.left = pct(m) + "%";
+      gt.textContent = (m === 0 ? "05:48" : "+" + m + "m"); grid.appendChild(gt);
+    }
+
+    PROMPTS.forEach(function (p, i) {
+      var row = el("div", "tl-row"); row.style.top = (i * 34) + "px";
+      var bar = el("div", "tl-bar build");
+      bar.style.left = pct(p.s) + "%";
+      bar.style.width = Math.max(pct(p.e - p.s), 2) + "%";
+      bar.innerHTML = "P" + p.n + " " + p.name.replace("&rarr;", "→");
+      bar.title = p.name + " — " + Math.round(p.e - p.s) + " min, " + p.iters + " repair iteration(s)";
+      bar.setAttribute("data-s", p.s); bar.setAttribute("data-e", p.e); bar.setAttribute("data-p", p.n);
+      row.appendChild(bar);
+      rows.appendChild(row);
+    });
+    VERIFIERS.forEach(function (v) {
+      var idx = PROMPTS.findIndex(function (p) { return p.n === v.p; });
+      var row = document.querySelectorAll(".tl-row")[idx];
+      var bar = el("div", "tl-bar verif");
+      bar.style.left = pct(v.s) + "%";
+      bar.style.width = Math.max(pct(v.e - v.s), 1.2) + "%";
+      bar.style.top = "23px";
+      bar.style.position = "absolute";
+      bar.innerHTML = v.label;
+      bar.title = "verifier subagent — ran in background while the builder continued";
+      bar.setAttribute("data-s", v.s); bar.setAttribute("data-e", v.e);
+      row.appendChild(bar);
+      row.style.height = "34px";
+    });
+
+    function render() {
+      var bars = rows.querySelectorAll(".tl-bar");
+      var lostPrompts = [], inflight = null, survived = 0;
+
+      PROMPTS.forEach(function (p) {
+        if (killAt === null) { survived++; return; }
+        if (p.e <= killAt) { survived++; }
+        else if (p.s < killAt && p.e > killAt) { inflight = p; }
+        else { lostPrompts.push(p); }
+      });
+
+      bars.forEach(function (b) {
+        var s = parseFloat(b.getAttribute("data-s")), e = parseFloat(b.getAttribute("data-e"));
+        b.classList.remove("lost", "inflight");
+        if (killAt === null) return;
+        if (heartbeat) {
+          if (s < killAt && e > killAt) b.classList.add("inflight");
+          return;
+        }
+        if (s >= killAt) b.classList.add("lost");
+        else if (e > killAt) b.classList.add("inflight");
+      });
+
+      killEl.style.display = killAt === null ? "none" : "block";
+      if (killAt !== null) killEl.style.left = pct(killAt) + "%";
+      seamEl.style.display = (killAt !== null && heartbeat) ? "block" : "none";
+      if (killAt !== null && heartbeat) seamEl.style.left = pct(killAt) + "%";
+
+      if (killAt === null) {
+        readout.innerHTML =
+          '<div class="readout-item"><div class="k">State</div><div class="v good">Nominal</div></div>' +
+          '<div class="readout-item"><div class="k">Projects closed</div><div class="v">7</div></div>' +
+          '<div class="readout-item"><div class="k">Compaction events</div><div class="v">0</div></div>' +
+          '<div class="readout-item"><div class="k">Meta loop</div><div class="v good">Intact</div></div>' +
+          '<div class="readout-note">This is what actually happened: one uninterrupted session, no context compaction ' +
+          'during the run, everything held in a single window. Luck of scale, not design.</div>';
+        return;
+      }
+
+      if (heartbeat) {
+        readout.innerHTML =
+          '<div class="readout-item"><div class="k">State</div><div class="v good">Resumed</div></div>' +
+          '<div class="readout-item"><div class="k">Projects closed</div><div class="v">7</div></div>' +
+          '<div class="readout-item"><div class="k">Work lost</div><div class="v good">&le; 1 stage</div></div>' +
+          '<div class="readout-item"><div class="k">Meta loop</div><div class="v good">On disk</div></div>' +
+          '<div class="readout-note">A fresh worker wakes on schedule, reads the board, finds project&nbsp;' +
+          (inflight ? inflight.n : "—") + ' mid-flight, and resumes from its last ledger event. The seam is ' +
+          'visible in the record and invisible in the deliverable. <strong>This is the entire argument for §9.</strong></div>';
+        return;
+      }
+
+      readout.innerHTML =
+        '<div class="readout-item"><div class="k">State</div><div class="v bad">Runtime dead</div></div>' +
+        '<div class="readout-item"><div class="k">Committed to disk</div><div class="v">' + survived + '</div></div>' +
+        '<div class="readout-item"><div class="k">Never started</div><div class="v bad">' + lostPrompts.length + '</div></div>' +
+        '<div class="readout-item"><div class="k">Meta loop</div><div class="v bad">Gone</div></div>' +
+        '<div class="readout-note">' +
+        (inflight ? 'Project&nbsp;' + inflight.n + ' was mid-build &mdash; that work is unrecoverable. ' : '') +
+        'The ' + survived + ' finished project' + (survived === 1 ? '' : 's') + ' survive as files. What does not survive: ' +
+        'the queue position, the accumulated lessons, the tool know-how, and every improvised scheduling decision. ' +
+        'Nobody is left to read the state file.</div>';
+    }
+
+    track.addEventListener("click", function (ev) {
+      var r = track.getBoundingClientRect();
+      killAt = Math.max(1, Math.min(TOTAL - 1, (ev.clientX - r.left) / r.width * TOTAL));
+      render();
+    });
+    document.getElementById("killBtn").addEventListener("click", function () {
+      killAt = 130; render();
+    });
+    document.getElementById("hbBtn").addEventListener("click", function () {
+      heartbeat = !heartbeat;
+      this.setAttribute("aria-pressed", String(heartbeat));
+      this.textContent = "Heartbeat resume: " + (heartbeat ? "on" : "off");
+      if (killAt === null) killAt = 130;
+      render();
+    });
+    document.getElementById("resetBtn").addEventListener("click", function () {
+      killAt = null; heartbeat = false;
+      var h = document.getElementById("hbBtn");
+      h.setAttribute("aria-pressed", "false");
+      h.textContent = "Heartbeat resume: off";
+      render();
+    });
+    render();
+  })();
+
+  /* ---------- matrix ---------- */
+  (function () {
+    var host = document.getElementById("matrix");
+    var filt = document.getElementById("modeFilter");
+    host.style.gridTemplateColumns = "12ch repeat(" + MODES.length + ", 1fr)";
+    host.appendChild(el("div", "mh", "Project"));
+    MODES.forEach(function (m) { host.appendChild(el("div", "mh", m.label)); });
+    PROMPTS.forEach(function (p) {
+      host.appendChild(el("div", "rl", "P" + p.n + " " + p.name.replace("&rarr;", "→")));
+      MODES.forEach(function (m) {
+        var on = MATRIX[p.n].indexOf(m.k) > -1;
+        var c = el("div", "cell" + (on ? " yes" : ""), on ? "■" : "·");
+        c.setAttribute("data-mode", m.k);
+        host.appendChild(c);
+      });
+    });
+    var active = null;
+    MODES.forEach(function (m) {
+      var b = el("button", "btn", m.label);
+      b.type = "button";
+      b.addEventListener("click", function () {
+        active = (active === m.k) ? null : m.k;
+        filt.querySelectorAll(".btn").forEach(function (x) { x.classList.remove("on"); });
+        if (active) b.classList.add("on");
+        host.querySelectorAll(".cell").forEach(function (c) {
+          c.classList.toggle("dim", !!active && c.getAttribute("data-mode") !== active);
+        });
+      });
+      filt.appendChild(b);
+    });
+  })();
+
+  /* ---------- scatter ---------- */
+  (function () {
+    var svg = document.getElementById("scatter");
+    var W = 640, H = 300, L = 56, R = 24, TP = 24, B = 52;
+    var iw = W - L - R, ih = H - TP - B;
+    var maxI = 10;
+    var out = [];
+
+    out.push('<line x1="' + L + '" y1="' + (TP + ih) + '" x2="' + (W - R) + '" y2="' + (TP + ih) + '" stroke="var(--rule-2)"/>');
+    out.push('<line x1="' + L + '" y1="' + TP + '" x2="' + L + '" y2="' + (TP + ih) + '" stroke="var(--rule-2)"/>');
+
+    for (var i = 0; i <= maxI; i += 2) {
+      var y = TP + ih - (i / maxI) * ih;
+      out.push('<line x1="' + L + '" y1="' + y + '" x2="' + (W - R) + '" y2="' + y + '" stroke="var(--rule)" stroke-dasharray="2 3"/>');
+      out.push('<text x="' + (L - 8) + '" y="' + (y + 3) + '" text-anchor="end">' + i + '</text>');
+    }
+    out.push('<text class="axl" x="' + L + '" y="' + (H - 16) + '">JUDGED &mdash; taste, continuity, claims</text>');
+    out.push('<text class="axl" x="' + (W - R) + '" y="' + (H - 16) + '" text-anchor="end">MECHANICAL &mdash; ground truth, tests</text>');
+    out.push('<text class="axl" x="' + L + '" y="' + (TP - 8) + '">REPAIR ITERATIONS</text>');
+
+    PROMPTS.forEach(function (p) {
+      var x = L + p.mech * iw;
+      var y = TP + ih - (p.iters / maxI) * ih;
+      var judged = p.mech < 0.6;
+      var col = judged ? "var(--fail)" : "var(--pass)";
+      out.push('<g class="pt"><title>P' + p.n + ' ' + p.name.replace("&rarr;", "→") + " — " + p.iters +
+        ' iteration(s)</title>' +
+        '<circle cx="' + x + '" cy="' + y + '" r="6" fill="' + col + '" fill-opacity="0.75" stroke="' + col + '"/>' +
+        '<text class="lbl" x="' + (x + 11) + '" y="' + (y + 3.5) + '">P' + p.n + '</text></g>');
+    });
+
+    var xs = L + 0.6 * iw;
+    out.push('<line x1="' + xs + '" y1="' + TP + '" x2="' + xs + '" y2="' + (TP + ih) + '" stroke="var(--accent)" stroke-dasharray="4 3"/>');
+    out.push('<text x="' + (xs - 6) + '" y="' + (TP + 12) + '" text-anchor="end" fill="var(--accent)">needs a second mind</text>');
+    out.push('<text x="' + (xs + 6) + '" y="' + (TP + 12) + '" fill="var(--accent)">needs a test suite</text>');
+
+    svg.innerHTML = out.join("");
+  })();
+
+  /* ---------- comparison ---------- */
+  (function () {
+    var host = document.getElementById("cmpRows");
+    var filt = document.getElementById("cmpFilter");
+    CMP.forEach(function (c) {
+      var r = el("div", "cmp-row");
+      r.setAttribute("data-lead", c.lead);
+      r.innerHTML =
+        '<div class="cmp-k">' + c.k + '</div>' +
+        '<div>' + c.us + '</div>' +
+        '<div style="color:var(--ink-2)">' + c.them + '</div>' +
+        '<div class="cmp-lead ' + c.lead + '">' + c.tag + '</div>';
+      host.appendChild(r);
+    });
+    var opts = [{ k: "all", l: "All" }, { k: "us", l: "Night shift leads" }, { k: "them", l: "Reference leads" }, { k: "par", l: "Parity" }];
+    var cur = "all";
+    opts.forEach(function (o) {
+      var b = el("button", "btn" + (o.k === "all" ? " on" : ""), o.l);
+      b.type = "button";
+      b.addEventListener("click", function () {
+        cur = o.k;
+        filt.querySelectorAll(".btn").forEach(function (x) { x.classList.remove("on"); });
+        b.classList.add("on");
+        host.querySelectorAll(".cmp-row").forEach(function (r) {
+          r.classList.toggle("hide", cur !== "all" && r.getAttribute("data-lead") !== cur);
+        });
+      });
+      filt.appendChild(b);
+    });
+  })();
+
+  /* ---------- warts ---------- */
+  (function () {
+    var host = document.getElementById("warts");
+    WARTS.forEach(function (w, i) {
+      var d = el("div", "wart");
+      d.innerHTML =
+        '<div class="wn">W' + (i + 1) + '</div>' +
+        '<div><h4>' + w.t + '</h4><p>' + w.d + '</p><div class="ev">' + w.ev + '</div></div>';
+      host.appendChild(d);
+    });
+  })();
+
+  /* ---------- unknowns ---------- */
+  (function () {
+    var host = document.getElementById("uuGrid");
+    var filt = document.getElementById("uuFilter");
+    UU.forEach(function (u, i) {
+      var b = el("button", "uu");
+      b.type = "button";
+      b.setAttribute("data-t", u.t);
+      b.innerHTML =
+        '<div class="uu-top"><span class="uu-n">' + String(i + 1).padStart(2, "0") + '</span>' +
+        '<span class="uu-t">' + u.t + '</span></div>' +
+        '<h4>' + u.h + '</h4><p>' + u.d + '</p>' +
+        '<div class="uu-more">Read &rarr;</div>';
+      b.addEventListener("click", function () {
+        b.classList.toggle("open");
+        b.querySelector(".uu-more").innerHTML = b.classList.contains("open") ? "Collapse &uarr;" : "Read &rarr;";
+      });
+      host.appendChild(b);
+    });
+    var themes = ["All"].concat(UU.map(function (u) { return u.t; }).filter(function (v, i, a) { return a.indexOf(v) === i; }));
+    themes.forEach(function (t) {
+      var b = el("button", "btn" + (t === "All" ? " on" : ""), t);
+      b.type = "button";
+      b.addEventListener("click", function () {
+        filt.querySelectorAll(".btn").forEach(function (x) { x.classList.remove("on"); });
+        b.classList.add("on");
+        host.querySelectorAll(".uu").forEach(function (c) {
+          c.classList.toggle("hide", t !== "All" && c.getAttribute("data-t") !== t);
+        });
+      });
+      filt.appendChild(b);
+    });
+  })();
+
+  /* ---------- ledger bars ---------- */
+  (function () {
+    var host = document.getElementById("ledgerBars");
+    var base = el("div", "barrow");
+    base.innerHTML =
+      '<span style="color:var(--ink-3)">super.</span>' +
+      '<span class="bartrack"><i class="barfill muted" style="width:100%"></i></span>' +
+      '<span class="rv">13</span>';
+    base.title = "The human-supervised precursor project";
+    host.appendChild(base);
+    PROMPTS.forEach(function (p) {
+      var row = el("div", "barrow");
+      row.innerHTML =
+        '<span>P' + p.n + '</span>' +
+        '<span class="bartrack"><i class="barfill" style="width:' + (p.ledger / 13 * 100) + '%"></i></span>' +
+        '<span class="rv">' + p.ledger + '</span>';
+      host.appendChild(row);
+    });
+  })();
+
+  /* ---------- blueprint ---------- */
+  (function () {
+    var host = document.getElementById("buildList");
+    BUILD.forEach(function (b) {
+      var li = el("li");
+      li.innerHTML = '<div><div class="bt">' + b.t + '</div><div class="bd">' + b.d + '</div></div><div class="be">' + b.e + '</div>';
+      host.appendChild(li);
+    });
+
+    var sh = document.getElementById("steps");
+    var sd = document.getElementById("stepDetail");
+    var btns = [];
+    STEPS.forEach(function (s, i) {
+      var b = el("button", "step");
+      b.type = "button";
+      b.setAttribute("aria-pressed", String(i === 0));
+      b.innerHTML = '<div class="sv">' + s.v + '</div><div class="sn">' + s.n.toUpperCase() + '</div><div class="sd">' + s.d + '</div>';
+      b.addEventListener("click", function () {
+        btns.forEach(function (x) { x.setAttribute("aria-pressed", "false"); });
+        b.setAttribute("aria-pressed", "true");
+        sd.innerHTML = '<div class="callout"><strong>' + s.v + " — " + s.n + '.</strong> ' + s.exit + '</div>';
+      });
+      btns.push(b);
+      sh.appendChild(b);
+    });
+    sd.innerHTML = '<div class="callout"><strong>' + STEPS[0].v + " — " + STEPS[0].n + '.</strong> ' + STEPS[0].exit + '</div>';
+  })();
+
+})();
+</script>
