@@ -4,7 +4,7 @@ renders/
 # local-only: supervised precursors + verbatim benchmark originals
 prompt-01-command-center/
 prompt-02-weather-forecast/
-kimi-k3-prompts.md
+benchmark-prompts-original-local.md
 prompt-1-development-journey.md
 prompt-2-development-journey.md
 prompt-2-revised.md
