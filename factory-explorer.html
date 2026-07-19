@@ -737,6 +737,56 @@
     <div class="col" id="stepDetail"></div>
   </section>
 
+  <!-- ============ 10 ============ -->
+  <section>
+    <div class="sec-head">
+      <div class="sec-num">&sect;10</div>
+      <div>
+        <h2>Colophon &mdash; who wrote this</h2>
+        <p class="sec-sub">Not one model. The run was one thing; documenting it afterward was another, done across
+          several resumed sessions with explicit model switches along the way.</p>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head"><span>Phase &middot; model</span><span>reconstructed from session history, not assumed</span></div>
+      <div class="panel-body scroll-x">
+        <table>
+          <thead><tr><th>Phase</th><th>Model</th><th>Basis</th></tr></thead>
+          <tbody>
+            <tr><td>The autonomous overnight run itself &mdash; every project built, tested, deployed, ledgered</td>
+                <td><span class="chip accent">FABLE 5</span></td>
+                <td class="num" style="color:var(--ink-3)">session default at run time</td></tr>
+            <tr><td>Factory-status review, this document's original authorship, the two research subagents that mined the transcript and workspace</td>
+                <td><span class="chip pass">OPUS 4.8</span></td>
+                <td class="num" style="color:var(--ink-3)">explicit switch</td></tr>
+            <tr><td>First build of this explorer, the benchmark-reference strip, Vercel renames, the repo assembly and push, the prompt-provenance doc, first README</td>
+                <td><span class="chip accent">FABLE 5</span></td>
+                <td class="num" style="color:var(--ink-3)">explicit switch</td></tr>
+            <tr><td>Live deployment of this explorer, the README preview embed, the repo privacy audit, this section's own source-link fix</td>
+                <td><span class="chip defer">SONNET 5</span></td>
+                <td class="num" style="color:var(--ink-3)">explicit switch</td></tr>
+            <tr><td>This colophon, and the commit-history correction it documents</td>
+                <td><span class="chip pass">OPUS 4.8</span></td>
+                <td class="num" style="color:var(--ink-3)">current session state</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="col">
+      <div class="callout">
+        <strong>The commit trailers were wrong, briefly.</strong> Every commit in the repository names a model in
+        a <code>Co-Authored-By</code> trailer. For a while those were copy-pasted forward from the previous commit
+        instead of re-derived at each step, so two commits made under Sonnet&nbsp;5 carried an incorrect
+        &ldquo;Fable&nbsp;5&rdquo; trailer. Both were corrected in a history rewrite once the mistake was found,
+        alongside scrubbing the commit author's email to a no-reply address. <strong>This is the same failure mode
+        as &sect;7's warts, one level up</strong> &mdash; a record that's copied instead of re-derived drifts from
+        the truth silently, whether the record is a verdict or an authorship trailer.
+      </div>
+    </div>
+  </section>
+
   <footer>
     <div>Compiled from the session transcript, git history, execution contracts and journey ledgers &mdash; not from memory.</div>
     <div>Figures are live data: timeline from transcript timestamps, iteration counts and gate results from per-project closure records.</div>

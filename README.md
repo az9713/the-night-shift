@@ -30,6 +30,20 @@ Each project carries its own hardened `docs/spec/execution-contract.md` and an a
 - [factory-feasibility-assessment.md](factory-feasibility-assessment.md) — the pre-run design
 - [factory-state.md](factory-state.md) — final run state
 
+## Model provenance
+
+This wasn't all one model. Which Claude model did which part, reconstructed from actual `/model` switches and commit history rather than assumed:
+
+| Phase | Model |
+|---|---|
+| The autonomous overnight run itself — prompts 3–9 built, tested, deployed, ledgered | **Fable 5** |
+| Factory-status review, `FACTORY.md` authorship, the two research subagents that mined the transcript and workspace | **Opus 4.8** |
+| `factory-explorer.html` (first build), the benchmark-reference strip, Vercel renames, the monorepo push, `docs/prompts.md`, first `README.md` | **Fable 5** |
+| Live explorer deployment + README preview embed, the repo privacy audit, the §6 source-link fix | **Sonnet 5** |
+| This provenance section, and the commit-history correction below | **Opus 4.8** |
+
+Full detail, including two commits that were mislabeled and then corrected, in [FACTORY.md](FACTORY.md#model-provenance).
+
 ## Credit
 
 The seven work items were adapted from the model-evaluation benchmark by **Pat Simmons** — see [his video](https://www.youtube.com/watch?v=lPP6iBRuzgA). The originals are his; this repo contains the factory's hardened revisions and its builds. The factory experiment itself is unrelated to any particular model under test.

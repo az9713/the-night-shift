@@ -6,6 +6,8 @@
 
 **What this document is for:** not a victory lap. It is the specification of the factory that does not yet exist, written by documenting the one that ran once. Section 7 is the build plan for the next one — a factory that can run for days or weeks instead of one night.
 
+**Not one model.** The autonomous run itself was Fable 5 throughout. Documenting it afterward pulled in Opus 4.8 and Sonnet 5 as well — see [Model provenance](#model-provenance) in the appendix for the phase-by-phase breakdown, including two commits that were mislabeled and then corrected.
+
 ---
 
 ## 1. The run in one page
@@ -317,6 +319,20 @@ Git corroboration: commits for p3/p4/p9/p5/p6 span 23:14–01:31 PDT (= 06:14–
 1. Batched Computer Use session — p4 native keyboard, p6 pointer-lock mouse-look (~10 min, needs user foreground).
 2. Prompts 7/8: no version control — one `git init` + private push each.
 3. Watch page: 2 open rubric points (crystal edge highlight, bracelet anisotropy) — cosmetic, below gate threshold.
+
+### 8.4 Model provenance {#model-provenance}
+
+This document, its explorer, and the repository it lives in were not produced by one model. The autonomous run itself ran on a single model throughout; documenting it afterward — across several resumed sessions — pulled in two more.
+
+| Phase | Model | Basis |
+|---|---|---|
+| The autonomous overnight run — prompts 3–9 built, tested, deployed, ledgered (§1–§6 subject matter) | **Fable 5** | Session default at run time; consistent across all nine build commits, no contradicting evidence |
+| Factory-status review, this document's original authorship, the two subagents that mined the session transcript and workspace for evidence | **Opus 4.8** | Explicit model switch |
+| `factory-explorer.html` (first build), the benchmark-reference strip across the repo, Vercel project renames, the git monorepo assembly and push, `docs/prompts.md`, first `README.md` | **Fable 5** | Explicit model switch |
+| Live explorer deployment, the README preview embed, the repository privacy audit, the §6 source-link fix | **Sonnet 5** | Explicit model switch |
+| This provenance section, and the commit-history correction below | **Opus 4.8** | Current session state |
+
+**A note on git commit trailers, since they're the obvious place to look for this and were wrong.** Every commit in this repository carries a `Co-Authored-By` trailer naming a model. For a while those trailers were copy-pasted forward from whichever commit came before, rather than updated to reflect whichever model was actually active — so two commits (the README preview embed and the §6 source-link fix, both made under Sonnet 5) carried an incorrect "Fable 5" trailer. Both were corrected via a history rewrite once the mistake was found; the repository's commit-author email was scrubbed to a GitHub no-reply address in the same rewrite. If you're reading this from `git log`, the trailers are now accurate. The lesson generalizes past this one repo: **a provenance record that's copy-pasted instead of re-derived at each step will drift, silently, exactly like the verdict-schema decay in §5 unknown-unknown #4** — the same failure mode, one level up, applied to the record of who did the work rather than the record of whether the work passed.
 
 ---
 
