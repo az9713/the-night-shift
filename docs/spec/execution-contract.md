@@ -1,10 +1,10 @@
-# Prompt 9 execution contract — "What Is Kimi K3?" 20-second motion-graphics explainer
+# Prompt 9 execution contract — "What Is the Frontier?" 20-second motion-graphics explainer
 
-Hardened from [kimi-k3-prompts.md](../../../kimi-k3-prompts.md) (prompt 9). Original unchanged.
+Hardened from the original benchmark prompt (see [docs/prompts.md](../../../docs/prompts.md)) (prompt 9). Original unchanged.
 
 ## Deliverables
 
-1. `render/kimi-k3-explainer.mp4` — 1920×1080, ~20 s, rendered by HyperFrames.
+1. `render/explainer.mp4` — 1920×1080, ~20 s, rendered by HyperFrames.
 2. Composition source in this project (HyperFrames project + custom animation code).
 
 ## Requirements (from the benchmark, made checkable)

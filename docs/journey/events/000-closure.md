@@ -33,7 +33,7 @@
 | G4 Craft | ffprobe: 20.000 s, 1920×1080; consistent palette (#0a0a12 / ivory / #ff5f3c / #59d8ff), condensed type system, readable at frame scale |
 | Audio | Skipped per contract (optional; local TTS/BGM deps absent — did not block) |
 
-Deliverables: `render/kimi-k3-explainer.mp4` (2.8 MB) + `explainer/` source.
+Deliverables: `render/explainer.mp4` (2.8 MB) + `explainer/` source.
 
 ## Factory state
 
