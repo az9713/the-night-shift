@@ -5,6 +5,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 
 const host = document.getElementById('scene');
 const qa = new URLSearchParams(location.search).has('qa');
@@ -32,7 +33,7 @@ scene.background = new THREE.Color(0x0c0e0d);
 scene.fog = new THREE.Fog(0x0c0e0d, 16, 30);
 
 const pmrem = new THREE.PMREMGenerator(renderer);
-scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.045).texture;
+scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
 
 const camera = new THREE.PerspectiveCamera(30, 1, 0.1, 100);
 camera.position.set(1.0, 5.8, 12.9);
@@ -69,7 +70,7 @@ key.shadow.camera.left = -6; key.shadow.camera.right = 6;
 key.shadow.camera.top = 6; key.shadow.camera.bottom = -6;
 key.shadow.bias = -0.0004;
 scene.add(key);
-const rim = new THREE.DirectionalLight(0x9fd4e8, 2.2);
+const rim = new THREE.DirectionalLight(0x9fd4e8, 3.2);
 rim.position.set(-6, 3.4, -4.5);
 scene.add(rim);
 const fill = new THREE.PointLight(0x3d8a67, 6, 14, 2);
@@ -119,16 +120,16 @@ function dialTexture() {
   g.fillRect(0, 0, 1024, 1024);
   g.save();
   g.translate(512, 512);
-  g.globalAlpha = 0.055;
-  for (let i = 0; i < 1440; i++) {
-    const a = i * 0.25 * Math.PI / 180 * 4;
-    const bright = Math.sin(a * 3 + 1) > 0;
-    g.strokeStyle = bright ? '#7ec49e' : '#04150e';
-    g.lineWidth = 1.4;
+  for (let i = 0; i < 2880; i++) {
+    const a = i / 2880 * Math.PI * 2;
+    g.globalAlpha = 0.028 + 0.05 * Math.pow(Math.max(0, Math.cos(a - 2.2)), 6);
+    g.strokeStyle = i % 2 ? '#8fd0ab' : '#03130d';
+    g.lineWidth = 1.1;
     g.beginPath(); g.moveTo(0, 0);
     g.lineTo(Math.cos(a) * 512, Math.sin(a) * 512);
     g.stroke();
   }
+  g.globalAlpha = 1;
   g.restore();
   // minute track
   g.save();
@@ -268,7 +269,7 @@ const crystal = new THREE.Mesh(
   new THREE.MeshPhysicalMaterial({
     color: 0x9db8c4, metalness: 0, roughness: 0.03,
     transparent: true, opacity: 0.085, depthWrite: false,
-    clearcoat: 1, clearcoatRoughness: 0.02, envMapIntensity: 1.1,
+    clearcoat: 1, clearcoatRoughness: 0.02, envMapIntensity: 1.55,
   }));
 crystal.scale.set(1, 0.16, 1);
 crystal.position.y = 0.3;
@@ -302,12 +303,18 @@ for (const sx of [-1, 1]) {
 }
 
 // bracelet — three-link rows arcing away on both sides
+const linkBrushed = new THREE.MeshStandardMaterial({
+  color: 0x9ba3a8, metalness: 1, roughness: 0.5, envMapIntensity: 1.1,
+});
+const linkPolished = new THREE.MeshStandardMaterial({
+  color: 0xbfc7cc, metalness: 1, roughness: 0.12, envMapIntensity: 1.35,
+});
 function braceletRow(z, drop, tilt) {
   const row = new THREE.Group();
-  const midW = 0.78, sideW = 0.5, h = 0.22, d = 0.66;
-  const mid = new THREE.Mesh(new THREE.BoxGeometry(midW, h, d), steelPolished);
-  const l = new THREE.Mesh(new THREE.BoxGeometry(sideW, h, d), steelBrushed);
-  const r2 = new THREE.Mesh(new THREE.BoxGeometry(sideW, h, d), steelBrushed);
+  const midW = 0.78, sideW = 0.5, h = 0.24, d = 0.62;
+  const mid = new THREE.Mesh(new RoundedBoxGeometry(midW, h, d, 3, 0.08), linkPolished);
+  const l = new THREE.Mesh(new RoundedBoxGeometry(sideW, h, d, 3, 0.08), linkBrushed);
+  const r2 = new THREE.Mesh(new RoundedBoxGeometry(sideW, h, d, 3, 0.08), linkBrushed);
   l.position.x = -(midW / 2 + sideW / 2 + 0.03);
   r2.position.x = midW / 2 + sideW / 2 + 0.03;
   for (const p of [mid, l, r2]) { p.castShadow = true; row.add(p); }
@@ -332,7 +339,7 @@ for (let i = 0; i < 6; i++) {
 const ground = new THREE.Mesh(new THREE.CircleGeometry(20, 64),
   new THREE.ShadowMaterial({ opacity: 0.5 }));
 ground.rotation.x = -Math.PI / 2;
-ground.position.y = -1.65;
+ground.position.y = -1.18;
 ground.receiveShadow = true;
 scene.add(ground);
 const haloCanvas = document.createElement('canvas');
@@ -342,10 +349,11 @@ const grad = hg.createRadialGradient(128, 128, 10, 128, 128, 128);
 grad.addColorStop(0, 'rgba(38,46,42,0.9)');
 grad.addColorStop(1, 'rgba(12,14,13,0)');
 hg.fillStyle = grad; hg.fillRect(0, 0, 256, 256);
-const halo = new THREE.Mesh(new THREE.CircleGeometry(7, 48),
+const halo = new THREE.Mesh(new THREE.CircleGeometry(4.6, 48),
   new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(haloCanvas), transparent: true, depthWrite: false }));
 halo.rotation.x = -Math.PI / 2;
-halo.position.y = -1.64;
+halo.position.x = 1.55;
+halo.position.y = -1.17;
 scene.add(halo);
 
 // ---------- loop ----------
