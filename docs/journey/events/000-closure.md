@@ -18,7 +18,7 @@ Pure deterministic 60 Hz engine (`engine.js`: fighter FSM, hitbox/hurtbox, chip 
 |---|---|
 | G1 White-box | Pass — 15/15 vitest: movement/jump/crouch; hitbox only in active frames with attack reach; hit only in range; chip (≤ceil(15×0.15)) vs full damage; **no attack from hitstun**; hit-pause+shake on heavy; special only on ↓→P in window, expires outside; Granite hits behind, KO→best-of-3→rematch; timer decides by health; CPU approaches/attacks/lands hits; seed determinism; all 16 character pairings |
 | G2 Browser QA (local) | Pass — select→fight for volt/blaze and granite/wisp; walk +132px; jump lands; crouch/block clean in 2P; P2 arrow keys walk 106px + K attack; chip 2 vs clean 15 with `blocked` event; special state + event fires; **full best-of-3 vs CPU to a 2–1 winner (CPU won round 1 — contested, not scripted)**; rematch resets [0,0], 100 hp; console clean |
-| G3 Deploy | Pass — `fighting-game-kimi-k3-prompt4`, alias HTTP 200 public, deployed regression (start, special event, hastened round end) clean console |
+| G3 Deploy | Pass — `nightshift-fighting-game`, alias HTTP 200 public, deployed regression (start, special event, hastened round end) clean console |
 | G4 Done | Pass — source `az9713/prompt-04-fighting-game` (private), ledger closed |
 
 ## Defects and notes

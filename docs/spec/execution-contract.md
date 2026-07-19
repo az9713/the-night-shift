@@ -1,6 +1,6 @@
 # Prompt 4 execution contract — 2D fighting game
 
-Hardened from [kimi-k3-prompts.md](../../../kimi-k3-prompts.md) (prompt 4). Original unchanged.
+Hardened from the original benchmark prompt (see [docs/prompts.md](../../../docs/prompts.md)) (prompt 4). Original unchanged.
 
 ## Deliverable
 
@@ -26,7 +26,7 @@ Browser fighting game (static, canvas):
 |---|---|
 | G1 White-box (vitest, pure engine) | Movement/jump/crouch transitions; attack spawns hitbox with reach; hit registers only in range; block reduces damage vs unblocked; **no attack from hitstun**; no input while KO; special triggers only on ↓→P sequence within window; round ends on KO and on timer with higher-health winner; best-of-3 match end; rematch resets; CPU produces legal inputs approaching/attacking/blocking; determinism (same seed+inputs ⇒ same state) |
 | G2 Browser QA local | Select each of 4 characters; scripted keyboard fights: every move visibly changes QA state; combo/special registers; block chip vs full damage difference; full best-of-3 vs CPU driven to a winner; 2-player keys both respond; hit-pause/shake counters fire; KO + rematch; console clean |
-| G3 Deploy | Isolated project `fighting-game-kimi-k3-prompt4`, public alias, deployed regression of core G2 checks |
+| G3 Deploy | Isolated project `nightshift-fighting-game`, public alias, deployed regression of core G2 checks |
 | G4 Done | Gates pass; ledger closed; source pushed to private az9713 repo |
 
 Native-keyboard ecological check deferred to the batched Computer Use session (charter §7).
